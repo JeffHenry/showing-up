@@ -1,0 +1,13 @@
+# Coverage is gated by Vitest in CI (80% lines). Codecov reports trends and PR diffs only.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: 'condensed_header, diff, files'
+  require_changes: false
