@@ -10,20 +10,22 @@ phone, and gives coordinators an approval queue for logged hours and exportable 
 multi-tenant: a person can volunteer at one organization and coordinate at another, with
 permissions enforced by the database itself rather than by the UI.
 
-> **Live demo:** _coming with the MVP_ · **Screenshots:** _coming with the MVP_
+> **Live site:** [showing-up.vercel.app](https://showing-up.vercel.app) (landing page; sign-in and
+> scheduling arrive with the MVP) · **Screenshots:** _coming with the MVP_
 
 ---
 
 ## Project status
 
-🚧 **In active development: Phase 0 (Foundation).** This README is updated with every merged PR.
+🚧 **In active development: Phase 0 (Foundation) is complete; the MVP (P0) is next.** This README
+is updated with every merged PR.
 
-| Phase                | Scope                                                                                              | Status         |
-| -------------------- | -------------------------------------------------------------------------------------------------- | -------------- |
-| **0. Foundation**    | Tooling, test harness, CI/CD, database, app shell                                                  | 🔄 In progress |
-| **P0. MVP**          | Auth, organizations, invites, shifts, claiming shifts, role-based navigation, demo data            | ⏳ Planned     |
-| **P1. Full product** | Hours approval, week calendar, recurring shifts, reports & CSV export, email reminders, monitoring | ⏳ Planned     |
-| **P2. Stretch**      | Waitlists, skills matching, realtime spot counts, offline PWA, dark mode                           | ⏳ Planned     |
+| Phase                | Scope                                                                                              | Status      |
+| -------------------- | -------------------------------------------------------------------------------------------------- | ----------- |
+| **0. Foundation**    | Tooling, test harness, CI/CD, database, app shell                                                  | ✅ Complete |
+| **P0. MVP**          | Auth, organizations, invites, shifts, claiming shifts, role-based navigation, demo data            | ⏳ Next     |
+| **P1. Full product** | Hours approval, week calendar, recurring shifts, reports & CSV export, email reminders, monitoring | ⏳ Planned  |
+| **P2. Stretch**      | Waitlists, skills matching, realtime spot counts, offline PWA, dark mode                           | ⏳ Planned  |
 
 <details>
 <summary><strong>Phase 0 checklist</strong></summary>
@@ -33,7 +35,7 @@ permissions enforced by the database itself rather than by the UI.
 - [x] **0.3** CI/CD: GitHub Actions, Vercel previews, branch protection, Dependabot
 - [x] **0.4a** Database core: local Supabase stack, multi-tenant schema, RLS, pgTAP tests, generated types, CI database checks
 - [x] **0.4b** Environments: staging & production Supabase projects, migration deploy workflow, typed client
-- [ ] **0.5** App shell: router, layouts, providers, error boundaries, loading/empty states
+- [x] **0.5** App shell: router, layouts, providers, error boundaries, loading/empty states
 
 </details>
 
@@ -84,6 +86,19 @@ flowchart LR
   api --> email[Resend<br/>email]
   spa -. errors .-> sentry[Sentry]
 ```
+
+### Frontend structure
+
+- **Routing:** a React Router data router; each page is code-split with the router's `lazy`, so
+  it downloads only when needed and loads before the page switches (no blank flash).
+- **Two error layers:** a route-level error page (also catches failed chunk downloads after a
+  deploy) and a feature-level `ErrorBoundary` whose "Try again" also refetches failed queries.
+- **Accessibility built into the shell:** a skip link, focus moved to the new page's content
+  after navigation, per-page `<title>`s, an offline banner announced as a live status, and 44×44px
+  touch targets on touch devices.
+- **Feature-based folders:** `src/features/*` (from the MVP on), shared UI in
+  `src/components/common`, app wiring in `src/app`. See
+  [ADR 0006](docs/adr/0006-app-shell-routing-and-error-handling.md).
 
 ### Environments
 

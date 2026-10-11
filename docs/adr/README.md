@@ -11,3 +11,4 @@ such rather than edited.
 | [0003](0003-ci-cd-and-dependency-policy.md)           | CI/CD pipeline and dependency vulnerability policy | Accepted |
 | [0004](0004-database-authorization-model.md)          | Database authorization model                       | Accepted |
 | [0005](0005-environments-and-database-deployments.md) | Environments and database deployments              | Accepted |
+| [0006](0006-app-shell-routing-and-error-handling.md)  | App shell, routing, and error handling             | Accepted |
