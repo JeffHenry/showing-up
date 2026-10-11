@@ -1,3 +1,5 @@
+const unused = 'this should fail CI';
+
 import { Button } from '@/components/ui/button';
 
 export function App() {
