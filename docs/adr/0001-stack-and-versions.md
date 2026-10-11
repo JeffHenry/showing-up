@@ -15,6 +15,8 @@ start showed:
 - `typescript-eslint` supports TypeScript `>=4.8.4 <6.1.0`, so TypeScript 7 can't be linted with
   type information yet.
 - `eslint-plugin-jsx-a11y` (last released 6.10.2) declares support up to ESLint 9.
+- Vitest 5's `@vitest/mocker` declares an optional peer of `msw@^2.4.9`, so MSW 3 (released
+  2026-09-28) is not yet compatible with the test runner. _(Added in Phase 0.2.)_
 
 ## Decision
 
@@ -31,6 +33,7 @@ Adopt the latest mutually compatible versions:
 | Linting    | ESLint **9** (not 10), typescript-eslint 8 strict type-checked, jsx-a11y strict, react-hooks |
 | Formatting | Prettier 3 with Tailwind class sorting                                                       |
 | Dates      | date-fns 4 + `@date-fns/tz` (replaces `date-fns-tz`)                                         |
+| Testing    | Vitest 5, React Testing Library 16, **MSW 2** (not 3), jest-axe                              |
 
 shadcn/ui components in `src/components/ui/` are treated as vendored code: kept close to upstream
 (including file names such as `button.tsx` and helper exports such as `buttonVariants`) so future
@@ -41,5 +44,6 @@ shadcn/ui components in `src/components/ui/` are treated as vendored code: kept 
 - Accessibility lint rules run on every file, which was judged more valuable than being one ESLint
   major ahead.
 - TypeScript 7's faster native compiler is deferred until typescript-eslint supports it.
-- Two pinned-back majors must be revisited. Dependabot (Phase 0.3) will surface new releases;
-  revisit when typescript-eslint widens its TypeScript range and jsx-a11y declares ESLint 10.
+- Three pinned-back majors must be revisited. Dependabot (Phase 0.3) will surface new releases;
+  revisit when typescript-eslint widens its TypeScript range, jsx-a11y declares ESLint 10, and
+  Vitest's mocker accepts MSW 3.

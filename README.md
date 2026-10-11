@@ -26,7 +26,7 @@ permissions enforced by the database itself rather than by the UI.
 <summary><strong>Phase 0 checklist</strong></summary>
 
 - [x] **0.1** Repository & tooling: Vite, strict TypeScript, ESLint (type-aware + a11y), Prettier, Tailwind, shadcn/ui
-- [ ] **0.2** Test harness: Vitest, React Testing Library, MSW, jest-axe, shared render helper
+- [x] **0.2** Test harness: Vitest, React Testing Library, MSW, jest-axe, shared render helper
 - [ ] **0.3** CI/CD: GitHub Actions, Vercel previews, branch protection, Dependabot
 - [ ] **0.4** Database: local Supabase stack, first migration, RLS, generated types
 - [ ] **0.5** App shell: router, layouts, providers, error boundaries, loading/empty states
@@ -55,7 +55,7 @@ for what has landed so far.
 | Forms            | React Hook Form + Zod 4                   | Typed, performant forms with one schema shared between validation and types           |
 | UI               | Tailwind CSS 4 + shadcn/ui (Radix)        | Accessible primitives whose source lives in the repo and can be audited               |
 | Dates            | date-fns 4 + @date-fns/tz                 | Timestamps stored in UTC and shown in each organization's time zone                   |
-| Unit/integration | Vitest + React Testing Library + MSW      | Tests run through the same Vite pipeline as the app; network mocked at the HTTP layer |
+| Unit/integration | Vitest + React Testing Library + MSW 2    | Tests run through the same Vite pipeline as the app; network mocked at the HTTP layer |
 | Accessibility    | jest-axe + eslint-plugin-jsx-a11y         | Automated WCAG checks in both lint and tests                                          |
 | End-to-end       | Playwright                                | Critical user journeys tested against real preview deployments                        |
 | Hosting / CI     | Vercel + GitHub Actions                   | Preview deploy per PR; lint, typecheck, coverage, and build gates before merge        |
@@ -138,15 +138,29 @@ _Planned. Implementation details and tests will be linked here as they land._
 
 ## Testing strategy
 
-_Planned. Badges for CI and coverage will appear here once the pipeline is live._
+_CI and coverage badges will appear here once the pipeline is live (Phase 0.3)._
 
-- **Unit & integration (Vitest + RTL):** behavior-focused tests queried by role and label;
-  Supabase calls mocked at the network layer with MSW.
-- **Accessibility:** every page-level test runs an axe audit.
+**In place now**
+
+- **Unit & integration (Vitest + React Testing Library):** behavior-focused tests that query by
+  role and label, with `user-event` for realistic keyboard and pointer interaction.
+- **Shared render helper:** `renderWithProviders()` mounts components inside the same providers the
+  app uses (a fresh TanStack Query client per test and a data router), so tests can drive URLs,
+  route params, and search params.
+- **Network mocking with MSW:** requests are intercepted at the HTTP layer, so real client code
+  runs against fake responses. Any request without a handler **fails the test**, so nothing
+  reaches a real network by accident.
+- **Accessibility:** page-level tests run an axe audit (`jest-axe`); the harness itself is tested
+  to confirm violations are actually reported.
+- **Lint rules for tests:** Testing Library best practices are enforced, and focused tests
+  (`.only`) are rejected so a suite can't be skipped silently.
+- **Coverage gate:** 80% lines on `src/features/**` and `src/lib/**`.
+
+**Planned**
+
 - **Database (pgTAP):** RLS policies tested directly, e.g. a volunteer cannot read another
-  organization's shifts or approve their own hours.
+  organization's shifts or approve their own hours (Phase 0.4).
 - **End-to-end (Playwright):** claim a shift, hit a full shift, approve hours, redeem an invite.
-- **Coverage gate:** 80% lines on feature and library code, enforced in CI.
 
 ---
 
@@ -168,13 +182,16 @@ npm install
 npm run dev
 ```
 
-| Script              | Purpose                                      |
-| ------------------- | -------------------------------------------- |
-| `npm run dev`       | Start the Vite dev server                    |
-| `npm run build`     | Type-check and build for production          |
-| `npm run typecheck` | TypeScript project build without emitting    |
-| `npm run lint`      | ESLint (type-aware, React Hooks, a11y)       |
-| `npm run format`    | Format with Prettier (`format:check` for CI) |
+| Script                  | Purpose                                      |
+| ----------------------- | -------------------------------------------- |
+| `npm run dev`           | Start the Vite dev server                    |
+| `npm run build`         | Type-check and build for production          |
+| `npm run typecheck`     | TypeScript project build without emitting    |
+| `npm run lint`          | ESLint (type-aware, React Hooks, a11y)       |
+| `npm run format`        | Format with Prettier (`format:check` for CI) |
+| `npm run test`          | Run unit and integration tests once (Vitest) |
+| `npm run test:watch`    | Re-run tests on file changes                 |
+| `npm run test:coverage` | Run tests with the coverage gate             |
 
 _Database setup (Docker + Supabase CLI) will be added in Phase 0.4._
 
