@@ -1,0 +1,43 @@
+# AI assistant instructions & local settings (kept out of the public repo)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Environment variables: only the example file is committed
+.env
+.env.*
+!.env.example
+
+# Test & coverage output
+coverage/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+
+# Vercel
+.vercel/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.sw?
