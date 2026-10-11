@@ -1,5 +1,8 @@
 # ShowingUp
 
+[![CI](https://github.com/JeffHenry/showing-up/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JeffHenry/showing-up/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/JeffHenry/showing-up/graph/badge.svg)](https://codecov.io/gh/JeffHenry/showing-up)
+
 **Volunteer scheduling for small nonprofits, without the spreadsheets and group texts.**
 
 ShowingUp lets an organization post volunteer shifts, lets volunteers claim open spots from their
@@ -27,7 +30,7 @@ permissions enforced by the database itself rather than by the UI.
 
 - [x] **0.1** Repository & tooling: Vite, strict TypeScript, ESLint (type-aware + a11y), Prettier, Tailwind, shadcn/ui
 - [x] **0.2** Test harness: Vitest, React Testing Library, MSW, jest-axe, shared render helper
-- [ ] **0.3** CI/CD: GitHub Actions, Vercel previews, branch protection, Dependabot
+- [x] **0.3** CI/CD: GitHub Actions, Vercel previews, branch protection, Dependabot
 - [ ] **0.4** Database: local Supabase stack, first migration, RLS, generated types
 - [ ] **0.5** App shell: router, layouts, providers, error boundaries, loading/empty states
 
@@ -138,8 +141,6 @@ _Planned. Implementation details and tests will be linked here as they land._
 
 ## Testing strategy
 
-_CI and coverage badges will appear here once the pipeline is live (Phase 0.3)._
-
 **In place now**
 
 - **Unit & integration (Vitest + React Testing Library):** behavior-focused tests that query by
@@ -160,7 +161,32 @@ _CI and coverage badges will appear here once the pipeline is live (Phase 0.3)._
 
 - **Database (pgTAP):** RLS policies tested directly, e.g. a volunteer cannot read another
   organization's shifts or approve their own hours (Phase 0.4).
-- **End-to-end (Playwright):** claim a shift, hit a full shift, approve hours, redeem an invite.
+- **End-to-end (Playwright):** claim a shift, hit a full shift, approve hours, redeem an invite,
+  run against each PR's preview deployment.
+
+### CI/CD and repository guardrails
+
+Nothing reaches `main` without passing automated checks, including commits from the repository
+owner. See [ADR 0003](docs/adr/0003-ci-cd-and-dependency-policy.md).
+
+```mermaid
+flowchart LR
+  pr[Pull request] --> quality["Quality<br/>format · lint · types<br/>tests + 80% coverage · build"]
+  pr --> audit["Audit<br/>prod dependencies,<br/>high severity blocks"]
+  pr --> preview[Vercel preview deploy]
+  quality --> gate{Ruleset:<br/>checks pass +<br/>branch up to date}
+  audit --> gate
+  gate -->|squash merge| main[main]
+  main --> prod[Vercel production deploy]
+```
+
+- **GitHub Actions** runs formatting, lint, type-check, tests with an enforced coverage gate, and
+  a production build on every PR. Coverage is reported to Codecov via OIDC (no stored token).
+- **Branch ruleset** (versioned in [`.github/rulesets/`](.github/rulesets/)): PRs only, required
+  checks on an up-to-date branch, squash merge, linear history, no force-push, no bypass.
+- **Supply chain:** actions pinned to commit SHAs, a blocking audit of production dependencies,
+  grouped weekly Dependabot updates, secret scanning with push protection, and CodeQL analysis.
+- **Deployments:** a Vercel preview for every PR; production deploys from `main` only.
 
 ---
 
