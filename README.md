@@ -32,7 +32,7 @@ permissions enforced by the database itself rather than by the UI.
 - [x] **0.2** Test harness: Vitest, React Testing Library, MSW, jest-axe, shared render helper
 - [x] **0.3** CI/CD: GitHub Actions, Vercel previews, branch protection, Dependabot
 - [x] **0.4a** Database core: local Supabase stack, multi-tenant schema, RLS, pgTAP tests, generated types, CI database checks
-- [ ] **0.4b** Environments: staging & production Supabase projects, migration deploy workflow, typed client
+- [x] **0.4b** Environments: staging & production Supabase projects, migration deploy workflow, typed client
 - [ ] **0.5** App shell: router, layouts, providers, error boundaries, loading/empty states
 
 </details>
@@ -70,7 +70,9 @@ Key decisions are recorded as [Architecture Decision Records](docs/adr/).
 
 ## Architecture
 
-_Planned. This section will be updated as each layer lands._
+The browser talks to Supabase directly; Postgres row-level security decides what each user can
+read and write. Vercel functions (planned) handle work that needs the secret key, such as CSV
+export and email.
 
 ```mermaid
 flowchart LR
@@ -82,6 +84,18 @@ flowchart LR
   api --> email[Resend<br/>email]
   spa -. errors .-> sentry[Sentry]
 ```
+
+### Environments
+
+|                | Frontend                        | Database                                 | How schema changes arrive                     |
+| -------------- | ------------------------------- | ---------------------------------------- | --------------------------------------------- |
+| **Local**      | `npm run dev`                   | Supabase CLI stack in Docker             | `npm run db:reset` (all migrations + seed)    |
+| **Preview**    | Vercel preview per pull request | `showing-up-staging` (Supabase, West US) | Manual workflow run from `main`               |
+| **Production** | https://showing-up.vercel.app   | `showing-up` (Supabase, West US)         | Manual workflow run from `main`, **approved** |
+
+The client reads its configuration through a Zod-validated module that fails fast with a clear
+message, and refuses a secret key placed in a browser-exposed variable. See
+[ADR 0005](docs/adr/0005-environments-and-database-deployments.md).
 
 ### Data model
 
@@ -224,6 +238,10 @@ flowchart LR
 - **Supply chain:** actions pinned to commit SHAs, a blocking audit of production dependencies,
   grouped weekly Dependabot updates, secret scanning with push protection, and CodeQL analysis.
 - **Deployments:** a Vercel preview for every PR; production deploys from `main` only.
+- **Database deployments** are a manual workflow ([`db-deploy.yml`](.github/workflows/db-deploy.yml))
+  that previews then applies pending migrations. Targets are GitHub Environments that accept runs
+  only from `main`; production pauses for an approval before it receives its credentials. The CI
+  token is scoped to read-only project settings for these two projects and expires.
 
 ---
 
@@ -239,10 +257,10 @@ gzipped. Scores will be published after the first production deploy._
 **Prerequisites:** Node 24 (see `.nvmrc`) and Docker (for the local Supabase stack).
 
 ```bash
-git clone https://github.com/JeffHenry/showing-up.git
-cd showing-up
+git clone https://github.com/JeffHenry/showing-up.git && cd showing-up
 npm install
-npm run db:start   # Postgres, Auth, API, and Studio (http://127.0.0.1:54323) in Docker
+cp .env.example .env.local   # local defaults, no secrets needed
+npm run db:start             # Postgres, Auth, API, and Studio (http://127.0.0.1:54323) in Docker
 npm run dev
 ```
 
