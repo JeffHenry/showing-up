@@ -1,0 +1,59 @@
+name: Deploy database
+
+# Applies new migrations from supabase/migrations to a hosted Supabase project.
+# Manual on purpose: schema changes reach a database only when someone decides they should.
+# Each target is a GitHub Environment that only accepts runs from `main`; production also
+# requires an approval before the job receives its secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target Supabase project
+        type: choice
+        required: true
+        options:
+          - supabase-staging
+          - supabase-production
+
+permissions:
+  contents: read
+
+# One deploy per environment at a time, and never cancel a migration mid-flight.
+concurrency:
+  group: db-deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Migrate ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.environment }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Installs the Supabase CLI at the exact version in package-lock.json.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Link project
+        run: npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Show migration status (local vs remote)
+        run: npx supabase migration list
+
+      - name: Preview changes
+        run: npx supabase db push --dry-run
+
+      # Seed data is never pushed to hosted projects.
+      - name: Apply migrations
+        run: npx supabase db push
