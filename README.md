@@ -31,7 +31,8 @@ permissions enforced by the database itself rather than by the UI.
 - [x] **0.1** Repository & tooling: Vite, strict TypeScript, ESLint (type-aware + a11y), Prettier, Tailwind, shadcn/ui
 - [x] **0.2** Test harness: Vitest, React Testing Library, MSW, jest-axe, shared render helper
 - [x] **0.3** CI/CD: GitHub Actions, Vercel previews, branch protection, Dependabot
-- [ ] **0.4** Database: local Supabase stack, first migration, RLS, generated types
+- [x] **0.4a** Database core: local Supabase stack, multi-tenant schema, RLS, pgTAP tests, generated types, CI database checks
+- [ ] **0.4b** Environments: staging & production Supabase projects, migration deploy workflow, typed client
 - [ ] **0.5** App shell: router, layouts, providers, error boundaries, loading/empty states
 
 </details>
@@ -74,15 +75,19 @@ _Planned. This section will be updated as each layer lands._
 ```mermaid
 flowchart LR
   user([Volunteer / Coordinator]) --> spa[React SPA<br/>Vercel CDN]
-  spa -- "anon key + user JWT" --> sb[(Supabase<br/>Postgres + RLS)]
+  spa -- "publishable key + user JWT" --> sb[(Supabase<br/>Postgres + RLS)]
   spa --> auth[Supabase Auth<br/>magic link + Google]
   spa -- "JWT" --> api[Vercel functions<br/>/api/*]
-  api -- "verifies JWT + role,<br/>then service role" --> sb
+  api -- "verifies JWT + role,<br/>then secret key" --> sb
   api --> email[Resend<br/>email]
   spa -. errors .-> sentry[Sentry]
 ```
 
-### Data model (planned)
+### Data model
+
+`profiles`, `organizations`, and `memberships` are live
+([migration](supabase/migrations/20261011061454_tenancy_core.sql)). Shifts, signups, invites, and
+hours logs are planned and each arrive with their feature.
 
 ```mermaid
 erDiagram
@@ -96,10 +101,20 @@ erDiagram
   profiles ||--o{ hours_logs : logs
   shifts |o--o{ hours_logs : "optionally linked"
 
+  profiles {
+    uuid id "= auth.users.id"
+    text full_name
+    text timezone "validated IANA zone"
+  }
+  organizations {
+    text name
+    text slug "unique, URL-safe"
+    text timezone "validated IANA zone"
+  }
   memberships {
     uuid org_id
     uuid user_id
-    text role "owner | coordinator | volunteer"
+    enum role "owner | coordinator | volunteer"
   }
   shifts {
     timestamptz start_time
@@ -123,19 +138,36 @@ erDiagram
 
 ## Security design
 
-_Planned. Implementation details and tests will be linked here as they land._
+Authorization lives in Postgres. The UI only hides controls a user can't use; a volunteer calling
+the API directly gets exactly the same answers as the UI. See
+[ADR 0004](docs/adr/0004-database-authorization-model.md).
 
-- **Authorization lives in Postgres.** Row Level Security is enabled on every table; the UI only
-  hides controls a user can't use. A volunteer calling the API directly gets the same answer as
-  the UI.
+**In place now** (tested by [35 pgTAP assertions](supabase/tests/database/))
+
+- **Row-level security on every table**, with a test that fails if any future table ships
+  without it.
+- **Least privilege, down to the column.** Signed-out users have no table or function access.
+  Signed-in users can only update specific columns (e.g. an owner can change a member's `role`,
+  but never move a membership to another organization or user).
+- **No direct inserts for sensitive rows.** Organizations and memberships are created only by
+  `create_organization()`, which writes the organization and the caller's owner membership in one
+  transaction. Nobody can grant themselves membership in someone else's organization.
+- **An organization can't be orphaned.** A trigger rejects removing or demoting the last owner,
+  and locks the organization row so two concurrent demotions can't both slip through.
+- **Hardened helper functions.** Policy helpers live in a schema the API doesn't expose, run with
+  a pinned empty `search_path`, and policies evaluate `auth.uid()` once per query rather than per
+  row.
+- **Typed errors.** Database errors meant for users carry stable codes (`SLUG_TAKEN`,
+  `LAST_OWNER`) that the app maps to friendly messages.
+
+**Planned**
+
 - **Race-free shift claiming.** `claim_shift()` locks the shift row (`SELECT … FOR UPDATE`) before
   counting confirmed signups, so two volunteers can't both take the last spot.
-- **Sensitive writes go through RPCs.** Memberships, signups, and hour approvals are written only
-  by `security definer` functions that check the caller's role.
 - **Invite tokens are hashed.** Only a SHA-256 hash is stored; links expire after 7 days and are
   single use.
-- **Secrets stay server-side.** The browser only receives the public Supabase URL and anon key;
-  the service-role key exists only in Vercel functions.
+- **Secrets stay server-side.** The browser only receives the public Supabase URL and publishable
+  key; the secret key exists only in Vercel functions.
 
 ---
 
@@ -156,11 +188,12 @@ _Planned. Implementation details and tests will be linked here as they land._
 - **Lint rules for tests:** Testing Library best practices are enforced, and focused tests
   (`.only`) are rejected so a suite can't be skipped silently.
 - **Coverage gate:** 80% lines on `src/features/**` and `src/lib/**`.
+- **Database (pgTAP):** security rules tested in SQL by signing in as different users (owner,
+  coordinator, volunteer, outsider, signed-out) and asserting what each can read and change. Each
+  test file runs in a transaction that is rolled back.
 
 **Planned**
 
-- **Database (pgTAP):** RLS policies tested directly, e.g. a volunteer cannot read another
-  organization's shifts or approve their own hours (Phase 0.4).
 - **End-to-end (Playwright):** claim a shift, hit a full shift, approve hours, redeem an invite,
   run against each PR's preview deployment.
 
@@ -173,15 +206,19 @@ owner. See [ADR 0003](docs/adr/0003-ci-cd-and-dependency-policy.md).
 flowchart LR
   pr[Pull request] --> quality["Quality<br/>format · lint · types<br/>tests + 80% coverage · build"]
   pr --> audit["Audit<br/>prod dependencies,<br/>high severity blocks"]
+  pr --> database["Database<br/>migrations · pgTAP ·<br/>db lint · types drift"]
   pr --> preview[Vercel preview deploy]
   quality --> gate{Ruleset:<br/>checks pass +<br/>branch up to date}
   audit --> gate
+  database --> gate
   gate -->|squash merge| main[main]
   main --> prod[Vercel production deploy]
 ```
 
 - **GitHub Actions** runs formatting, lint, type-check, tests with an enforced coverage gate, and
   a production build on every PR. Coverage is reported to Codecov via OIDC (no stored token).
+- **Database checks** apply every migration to a fresh Postgres, run the pgTAP security tests and
+  the function linter, and fail if `src/types/database.ts` wasn't regenerated after a schema change.
 - **Branch ruleset** (versioned in [`.github/rulesets/`](.github/rulesets/)): PRs only, required
   checks on an up-to-date branch, squash merge, linear history, no force-push, no bypass.
 - **Supply chain:** actions pinned to commit SHAs, a blocking audit of production dependencies,
@@ -199,27 +236,31 @@ gzipped. Scores will be published after the first production deploy._
 
 ## Local setup
 
-**Prerequisites:** Node 24 (see `.nvmrc`).
+**Prerequisites:** Node 24 (see `.nvmrc`) and Docker (for the local Supabase stack).
 
 ```bash
 git clone https://github.com/JeffHenry/showing-up.git
 cd showing-up
 npm install
+npm run db:start   # Postgres, Auth, API, and Studio (http://127.0.0.1:54323) in Docker
 npm run dev
 ```
 
-| Script                  | Purpose                                      |
-| ----------------------- | -------------------------------------------- |
-| `npm run dev`           | Start the Vite dev server                    |
-| `npm run build`         | Type-check and build for production          |
-| `npm run typecheck`     | TypeScript project build without emitting    |
-| `npm run lint`          | ESLint (type-aware, React Hooks, a11y)       |
-| `npm run format`        | Format with Prettier (`format:check` for CI) |
-| `npm run test`          | Run unit and integration tests once (Vitest) |
-| `npm run test:watch`    | Re-run tests on file changes                 |
-| `npm run test:coverage` | Run tests with the coverage gate             |
-
-_Database setup (Docker + Supabase CLI) will be added in Phase 0.4._
+| Script                         | Purpose                                            |
+| ------------------------------ | -------------------------------------------------- |
+| `npm run dev`                  | Start the Vite dev server                          |
+| `npm run build`                | Type-check and build for production                |
+| `npm run typecheck`            | TypeScript project build without emitting          |
+| `npm run lint`                 | ESLint (type-aware, React Hooks, a11y)             |
+| `npm run format`               | Format with Prettier (`format:check` for CI)       |
+| `npm run test`                 | Run unit and integration tests once (Vitest)       |
+| `npm run test:watch`           | Re-run tests on file changes                       |
+| `npm run test:coverage`        | Run tests with the coverage gate                   |
+| `npm run db:start` / `db:stop` | Start or stop the local Supabase stack             |
+| `npm run db:reset`             | Rebuild the local database from migrations + seed  |
+| `npm run db:test`              | Run the pgTAP database tests                       |
+| `npm run db:lint`              | Lint database functions (fails on warnings)        |
+| `npm run db:types`             | Regenerate `src/types/database.ts` from the schema |
 
 ---
 
