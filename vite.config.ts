@@ -1,14 +1,33 @@
 import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
-// https://vite.dev/config/
+// https://vite.dev/config/ · https://vitest.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+    // Points at the local Supabase stack's URL so MSW handlers can match real client requests.
+    env: {
+      VITE_SUPABASE_URL: 'http://localhost:54321',
+      VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+    },
+    coverage: {
+      provider: 'v8',
+      include: ['src/features/**', 'src/lib/**'],
+      exclude: ['**/__tests__/**', '**/*.test.{ts,tsx}'],
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
+      thresholds: {
+        lines: 80,
+      },
     },
   },
 });
