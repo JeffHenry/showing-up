@@ -18,6 +18,7 @@ dist-ssr/
 
 # Test & coverage output
 coverage/
+.vitest/
 playwright-report/
 test-results/
 blob-report/
