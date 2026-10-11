@@ -262,8 +262,20 @@ flowchart LR
 
 ## Lighthouse
 
-_Targets: ≥ 90 for Performance, Accessibility, and Best Practices on mobile; initial JS < 200 KB
-gzipped. Scores will be published after the first production deploy._
+Measured on production ([showing-up.vercel.app](https://showing-up.vercel.app)), mobile profile,
+in a clean Chrome Incognito window, after Phase 0 (landing page and app shell):
+
+| Performance | Accessibility | Best Practices |   SEO   |
+| :---------: | :-----------: | :------------: | :-----: |
+|   **99**    |    **100**    |    **100**     | **100** |
+
+Targets: ≥ 90 for Performance, Accessibility, and Best Practices on mobile. Initial JavaScript is
+122.5 KB gzipped against a 200 KB budget; each page is a separate chunk. Scores will be re-measured
+as MVP pages land.
+
+_Measuring tip: audit in Incognito. Browser extensions and Vercel's toolbar (shown to signed-in
+team members) inject scripts that lower Best Practices and SEO; preview deployments are also
+intentionally marked `noindex`._
 
 ---
 
