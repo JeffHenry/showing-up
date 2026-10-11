@@ -1,0 +1,53 @@
+import { screen } from '@testing-library/react';
+import { axe } from 'jest-axe';
+import { describe, expect, it } from 'vitest';
+import { LandingPage } from '@/app/routes/LandingPage';
+import { NotFoundPage } from '@/app/routes/NotFoundPage';
+import { REPO_URL } from '@/lib/constants';
+import { renderWithProviders } from '@/test/render';
+
+describe('LandingPage', () => {
+  it('pitches the product and its three core capabilities', () => {
+    renderWithProviders(<LandingPage />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Volunteer scheduling without the spreadsheets.',
+    );
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Post shifts in minutes',
+      'Claim a spot from any phone',
+      'Track and approve hours',
+    ]);
+  });
+
+  it('links to the source and says sign-in is not available yet', () => {
+    renderWithProviders(<LandingPage />);
+
+    expect(screen.getByRole('link', { name: 'View the source on GitHub' })).toHaveAttribute(
+      'href',
+      REPO_URL,
+    );
+    expect(screen.getByText(/sign-in and scheduling arrive/i)).toBeInTheDocument();
+  });
+
+  it('has no detectable accessibility violations', async () => {
+    const { container } = renderWithProviders(<LandingPage />);
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('NotFoundPage', () => {
+  it('explains the problem and links home', () => {
+    renderWithProviders(<NotFoundPage />);
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Go to home' })).toHaveAttribute('href', '/');
+  });
+
+  it('has no detectable accessibility violations', async () => {
+    const { container } = renderWithProviders(<NotFoundPage />);
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});
