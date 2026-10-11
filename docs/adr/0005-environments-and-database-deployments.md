@@ -1,6 +1,6 @@
 # 0005: Environments and database deployments
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-10-11: access token needs Connection Pooling read access)
 - **Date:** 2026-10-11
 
 ## Context
@@ -33,7 +33,16 @@ environment names are case-insensitive). Each holds:
 - `SUPABASE_PROJECT_ID` (variable, not secret)
 - `SUPABASE_DB_PASSWORD` (secret; `db push` authenticates with it)
 - `SUPABASE_ACCESS_TOKEN` (secret; a **scoped** personal access token with read-only Project
-  Settings, API Keys, and API Key Secrets, limited to these two projects, with a 90-day expiry)
+  Settings, API Keys, API Key Secrets, and Connection Pooling, limited to these two projects, with
+  a 90-day expiry)
+
+**Why Connection Pooling (amendment).** Supabase documents three permissions for `supabase link`,
+and the first deploy failed with them. GitHub's runners have no IPv6, and a hosted project's
+direct database host is IPv6-only, so the CLI must connect through the IPv4 connection pooler.
+`supabase link` looks up the pooler address via the Management API's pooler-config endpoint; when
+the token can't read it, `link` still reports success, and the next command fails with "IPv6 is
+not supported on your current network". Adding read-only Connection Pooling access fixed it
+without widening the token further.
 
 Both environments accept runs **only from `main`**. `supabase-production` additionally requires
 an approval from the repository owner before the job starts and receives its secrets. Secrets are
