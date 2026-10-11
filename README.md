@@ -43,6 +43,9 @@ _Seeded owner, coordinator, and volunteer accounts will be listed here once the 
 
 ## Tech stack
 
+The stack as designed. Pieces are added phase by phase; see [Project status](#project-status)
+for what has landed so far.
+
 | Concern          | Choice                                    | Why                                                                                   |
 | ---------------- | ----------------------------------------- | ------------------------------------------------------------------------------------- |
 | Build            | Vite 8 + React 19 + TypeScript 6 (strict) | Fast builds, mature ecosystem, strict typing including unchecked index access         |
