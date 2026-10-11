@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Least privilege by default; jobs opt in to anything more.
+permissions:
+  contents: read
+
+# A newer push to the same PR (or branch) cancels the run already in progress.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    # Job names are the required status check names in the `main` ruleset. Rename both together.
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # Codecov upload via OIDC, so no long-lived token is stored
+    steps:
+      # Third-party actions are pinned to commit SHAs; Dependabot keeps them current.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Test with coverage gate
+        run: npm run test:coverage
+
+      - name: Write coverage summary
+        if: ${{ !cancelled() && hashFiles('coverage/coverage-summary.json') != '' }}
+        run: |
+          node --input-type=module -e "
+          import { readFileSync } from 'node:fs';
+          const { total } = JSON.parse(readFileSync('coverage/coverage-summary.json', 'utf8'));
+          const rows = ['lines', 'statements', 'functions', 'branches'].map(
+            (k) => '| ' + k + ' | ' + total[k].pct + '% | ' + total[k].covered + ' / ' + total[k].total + ' |',
+          );
+          console.log(['### Coverage', '', '| Metric | % | Covered |', '| --- | --- | --- |', ...rows].join('\n'));
+          " >> "$GITHUB_STEP_SUMMARY"
+
+      # The coverage gate is enforced by Vitest above; Codecov is reporting only,
+      # so a Codecov outage never blocks a merge.
+      - name: Upload coverage to Codecov
+        if: ${{ !cancelled() && hashFiles('coverage/lcov.info') != '' }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          use_oidc: true
+          files: coverage/lcov.info
+          disable_search: true
+          fail_ci_if_error: false
+
+      - name: Build
+        run: npm run build
+
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # Blocks on high/critical advisories in code that ships to users. Dev-only advisories are
+      # surfaced by Dependabot alerts instead (policy: docs/adr/0003-ci-cd-and-dependency-policy.md).
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
