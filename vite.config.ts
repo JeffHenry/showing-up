@@ -20,7 +20,7 @@ export default defineConfig({
     // Points at the local Supabase stack's URL so MSW handlers can match real client requests.
     env: {
       VITE_SUPABASE_URL: 'http://localhost:54321',
-      VITE_SUPABASE_ANON_KEY: 'test-anon-key',
+      VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
     },
     coverage: {
       provider: 'v8',

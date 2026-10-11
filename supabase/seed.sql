@@ -1,0 +1,2 @@
+-- Local development seed data. Runs after migrations on `npm run db:reset`.
+-- Demo organizations and the owner / coordinator / volunteer accounts arrive with the MVP (P0).
