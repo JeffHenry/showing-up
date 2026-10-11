@@ -1,0 +1,4 @@
+# Prettier also skips everything in .gitignore
+package-lock.json
+src/types/database.ts
+supabase/migrations/
