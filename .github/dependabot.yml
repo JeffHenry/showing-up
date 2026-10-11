@@ -27,6 +27,10 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: '@eslint/js'
         update-types: [version-update:semver-major]
+      # Node type definitions must match the Node runtime major (.nvmrc / engines / Vercel), not the
+      # newest Node release; bump together with the runtime.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
       # Vitest 5's mocker declares msw@^2.
       - dependency-name: msw
         update-types: [version-update:semver-major]
