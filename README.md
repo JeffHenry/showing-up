@@ -241,7 +241,7 @@ flowchart LR
 - **Database deployments** are a manual workflow ([`db-deploy.yml`](.github/workflows/db-deploy.yml))
   that previews then applies pending migrations. Targets are GitHub Environments that accept runs
   only from `main`; production pauses for an approval before it receives its credentials. The CI
-  token is scoped to read-only project settings for these two projects and expires.
+  token is read-only, limited to these two projects, and expires.
 
 ---
 
