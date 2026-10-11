@@ -64,10 +64,9 @@ describe('test harness', () => {
 
   it('rejects requests that have no matching handler', async () => {
     // MSW logs the unhandled request; silence it so the expected error doesn't clutter output.
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    // The spy is restored automatically after the test (`restoreMocks` in vite.config.ts).
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     await expect(fetch('http://localhost:54321/rest/v1/unmocked')).rejects.toThrow();
-
-    consoleError.mockRestore();
   });
 });

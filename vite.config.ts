@@ -15,6 +15,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // Put every vi.spyOn() back after each test, even when an assertion fails mid-test.
+    restoreMocks: true,
     // Points at the local Supabase stack's URL so MSW handlers can match real client requests.
     env: {
       VITE_SUPABASE_URL: 'http://localhost:54321',
