@@ -8,6 +8,9 @@ import { server } from './msw/server';
 
 expect.extend(toHaveNoViolations);
 
+// jsdom doesn't implement scrolling; React Router's <ScrollRestoration> calls it on navigation.
+window.scrollTo = () => undefined;
+
 beforeAll(() => {
   // A request without a matching handler fails the test, so tests never reach a real network.
   server.listen({ onUnhandledRequest: 'error' });

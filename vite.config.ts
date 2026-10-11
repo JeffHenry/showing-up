@@ -24,7 +24,13 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      include: ['src/features/**', 'src/lib/**'],
+      include: [
+        'src/features/**',
+        'src/lib/**',
+        'src/app/**',
+        'src/hooks/**',
+        'src/components/common/**',
+      ],
       exclude: ['**/__tests__/**', '**/*.test.{ts,tsx}'],
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       thresholds: {
