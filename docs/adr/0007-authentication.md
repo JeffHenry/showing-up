@@ -44,6 +44,10 @@ Three constraints shaped the details:
 ## Consequences
 
 - Sign-in works for anyone with an email address or a Google account, in every environment.
+- The session provider wraps every page, so it loads the Supabase client with a dynamic import
+  after first paint. Importing it eagerly put the client (about 55 KB gzipped) and Zod (about
+  22 KB) in the initial bundle and broke the 200 KB budget; lazily, initial JS is about 125 KB.
+  Auth state reads as `loading` for that brief moment, which every consumer already handles.
 - Hosted Auth settings and templates are applied by hand from the runbook; a change to the
   template file must be re-pasted into both projects.
 - Google's consent screen shows the Supabase project domain until a paid custom domain is added.

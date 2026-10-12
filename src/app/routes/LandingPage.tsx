@@ -1,4 +1,5 @@
 import { CalendarPlus, Clock, ExternalLink, UserCheck } from 'lucide-react';
+import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { APP_NAME, REPO_URL } from '@/lib/constants';
 
@@ -38,6 +39,9 @@ export function LandingPage() {
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Button asChild size="lg">
+            <Link to="/login">Sign in</Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
             <a href={REPO_URL}>
               View the source on GitHub
               <ExternalLink aria-hidden="true" data-icon="inline-end" />
@@ -45,7 +49,7 @@ export function LandingPage() {
           </Button>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          In active development: sign-in and scheduling arrive with the first release.
+          In active development: sign-in works today; organizations and scheduling are next.
         </p>
       </section>
 

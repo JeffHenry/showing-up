@@ -1,5 +1,6 @@
 import { Link, Outlet, ScrollRestoration } from 'react-router';
 import { OfflineBanner } from '@/components/common/OfflineBanner';
+import { AccountControls } from '@/features/auth/components/AccountControls';
 import { useFocusMainOnNavigate } from '@/hooks/useFocusMainOnNavigate';
 import { APP_NAME, REPO_URL } from '@/lib/constants';
 
@@ -20,10 +21,11 @@ export function AppLayout() {
       </a>
       <OfflineBanner />
       <header className="border-b">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center px-4">
+        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4">
           <Link to="/" className={`text-lg font-semibold tracking-tight ${focusRing}`}>
             {APP_NAME}
           </Link>
+          <AccountControls />
         </div>
       </header>
       <main

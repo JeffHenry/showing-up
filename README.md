@@ -10,8 +10,8 @@ phone, and gives coordinators an approval queue for logged hours and exportable 
 multi-tenant: a person can volunteer at one organization and coordinate at another, with
 permissions enforced by the database itself rather than by the UI.
 
-> **Live site:** [showing-up.vercel.app](https://showing-up.vercel.app) (landing page; sign-in and
-> scheduling arrive with the MVP) · **Screenshots:** _coming with the MVP_
+> **Live site:** [showing-up.vercel.app](https://showing-up.vercel.app) (sign-in works today;
+> organizations and scheduling arrive next) · **Screenshots:** _coming with the MVP_
 
 ---
 
@@ -42,9 +42,9 @@ README is updated with every merged PR.
 <details>
 <summary><strong>P0 (MVP) checklist</strong></summary>
 
-- [ ] **Auth:** email (6-digit code + link) and Google sign-in, session context, protected routes
+- [x] **Auth:** email (6-digit code + link) and Google sign-in, session context, protected routes
   - [x] Configuration: email templates, Resend delivery, Google OAuth, setup runbook
-  - [ ] Sign-in UI, session handling, protected routes
+  - [x] Sign-in UI, session handling, protected routes
 - [ ] **Organizations:** create, list, switch; creator becomes owner
 - [ ] **Invites:** generate link, redeem via RPC
 - [ ] **Shifts:** create/edit/delete for coordinators, list with cursor pagination
@@ -202,16 +202,16 @@ the API directly gets exactly the same answers as the UI. See
 - **Hardened helper functions.** Policy helpers live in a schema the API doesn't expose, run with
   a pinned empty `search_path`, and policies evaluate `auth.uid()` once per query rather than per
   row.
-- **Typed errors.** Database errors meant for users carry stable codes (`SLUG_TAKEN`,
-  `LAST_OWNER`) that the app maps to friendly messages.
+- **Typed errors.** Database and sign-in errors carry stable codes (`SLUG_TAKEN`, `LAST_OWNER`,
+  `otp_expired`, …) that the app maps to friendly messages.
+- **Passwordless and Google sign-in.** Email sign-in sends a 6-digit code and a link that the app
+  verifies, so it works across devices and isn't used up by mail scanners; Google uses the OAuth
+  PKCE flow with an explicit code exchange. Email is delivered via Resend from a domain passing
+  SPF, DKIM, and DMARC. The post-sign-in redirect accepts only same-site paths (no open redirects),
+  and signing out clears every cached query. See [ADR 0007](docs/adr/0007-authentication.md).
 
 **Planned**
 
-- **Passwordless and Google sign-in** (configuration in place; UI in progress). Email sign-in
-  sends a 6-digit code and a link that's verified in the app, so it works across devices and
-  survives mail scanners; Google uses the OAuth PKCE flow. Email is delivered via Resend from a
-  domain with SPF, DKIM, and DMARC. Post-login redirects accept only same-site paths. See
-  [ADR 0007](docs/adr/0007-authentication.md).
 - **Race-free shift claiming.** `claim_shift()` locks the shift row (`SELECT … FOR UPDATE`) before
   counting confirmed signups, so two volunteers can't both take the last spot.
 - **Invite tokens are hashed.** Only a SHA-256 hash is stored; links expire after 7 days and are
@@ -291,8 +291,10 @@ in a clean Chrome Incognito window, after Phase 0 (landing page and app shell):
 |   **99**    |    **100**    |    **100**     | **100** |
 
 Targets: ≥ 90 for Performance, Accessibility, and Best Practices on mobile. Initial JavaScript is
-122.5 KB gzipped against a 200 KB budget; each page is a separate chunk. Scores will be re-measured
-as MVP pages land.
+125.3 KB gzipped against a 200 KB budget; each page is a separate chunk, and the Supabase client
+(about 77 KB with its dependencies) loads after first paint because no page needs it to render.
+Adding sign-in had briefly pushed the initial bundle to 202.7 KB; the build-size check caught it
+before merge. Scores will be re-measured as MVP pages land.
 
 _Measuring tip: audit in Incognito. Browser extensions and Vercel's toolbar (shown to signed-in
 team members) inject scripts that lower Best Practices and SEO; preview deployments are also
