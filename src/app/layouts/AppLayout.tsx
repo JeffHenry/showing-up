@@ -35,12 +35,17 @@ export function AppLayout() {
         <Outlet />
       </main>
       <footer className="border-t">
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 text-sm text-muted-foreground">
-          {APP_NAME} is a portfolio project.{' '}
-          <a href={REPO_URL} className={`underline underline-offset-4 ${focusRing}`}>
-            View the source on GitHub
-          </a>
-          .
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-sm text-muted-foreground">
+          <p>
+            {APP_NAME} is a portfolio project.{' '}
+            <a href={REPO_URL} className={`underline underline-offset-4 ${focusRing}`}>
+              View the source on GitHub
+            </a>
+            .
+          </p>
+          <Link to="/privacy" className={`underline underline-offset-4 ${focusRing}`}>
+            Privacy policy
+          </Link>
         </div>
       </footer>
       <ScrollRestoration />

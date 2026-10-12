@@ -3,7 +3,8 @@ import { axe } from 'jest-axe';
 import { describe, expect, it } from 'vitest';
 import { LandingPage } from '@/app/routes/LandingPage';
 import { NotFoundPage } from '@/app/routes/NotFoundPage';
-import { REPO_URL } from '@/lib/constants';
+import { PrivacyPage } from '@/app/routes/PrivacyPage';
+import { PRIVACY_EMAIL, REPO_URL } from '@/lib/constants';
 import { renderWithProviders } from '@/test/render';
 
 describe('LandingPage', () => {
@@ -47,6 +48,31 @@ describe('NotFoundPage', () => {
 
   it('has no detectable accessibility violations', async () => {
     const { container } = renderWithProviders(<NotFoundPage />);
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('PrivacyPage', () => {
+  it('covers what is collected, who processes it, and how to request deletion', () => {
+    renderWithProviders(<PrivacyPage />);
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'What we collect',
+      "How it's used",
+      'Who processes it',
+      'Who can see your information',
+      'Your choices',
+    ]);
+    expect(screen.getByRole('link', { name: PRIVACY_EMAIL })).toHaveAttribute(
+      'href',
+      `mailto:${PRIVACY_EMAIL}`,
+    );
+  });
+
+  it('has no detectable accessibility violations', async () => {
+    const { container } = renderWithProviders(<PrivacyPage />);
 
     expect(await axe(container)).toHaveNoViolations();
   });

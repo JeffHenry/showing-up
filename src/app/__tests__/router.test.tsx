@@ -42,6 +42,19 @@ describe('app routes', () => {
     expect(screen.getByRole('main')).toHaveAttribute('id', MAIN_CONTENT_ID);
   });
 
+  it('serves the privacy policy and links to it from every page', async () => {
+    const { user } = renderRoutes(routes, { route: '/' });
+
+    await user.click(await screen.findByRole('link', { name: 'Privacy policy' }));
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Privacy policy' }),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.title).toBe('Privacy policy · ShowingUp');
+    });
+  });
+
   it('moves focus to the main content after navigating', async () => {
     const { user } = renderRoutes(routes, { route: '/does-not-exist' });
 
