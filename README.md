@@ -130,9 +130,10 @@ message, and refuses a secret key placed in a browser-exposed variable. See
 
 ### Data model
 
-`profiles`, `organizations`, and `memberships` are live
-([migration](supabase/migrations/20261011061454_tenancy_core.sql)). Shifts, signups, invites, and
-hours logs are planned and each arrive with their feature.
+`profiles`, `organizations`, and `memberships` are live ([migrations](supabase/migrations/)).
+Shifts, signups, invites, and hours logs are planned and each arrive with their feature.
+Organizations hold only what the app uses: a description, contact email, and website are optional,
+and nothing else (no tax IDs or phone numbers) is collected.
 
 ```mermaid
 erDiagram
@@ -155,6 +156,9 @@ erDiagram
     text name
     text slug "unique, URL-safe"
     text timezone "validated IANA zone"
+    text description "optional"
+    text contact_email "optional"
+    text website_url "optional, http(s) only"
   }
   memberships {
     uuid org_id
@@ -187,7 +191,7 @@ Authorization lives in Postgres. The UI only hides controls a user can't use; a 
 the API directly gets exactly the same answers as the UI. See
 [ADR 0004](docs/adr/0004-database-authorization-model.md).
 
-**In place now** (tested by [35 pgTAP assertions](supabase/tests/database/))
+**In place now** (tested by [50 pgTAP assertions](supabase/tests/database/))
 
 - **Row-level security on every table**, with a test that fails if any future table ships
   without it.
@@ -197,6 +201,9 @@ the API directly gets exactly the same answers as the UI. See
 - **No direct inserts for sensitive rows.** Organizations and memberships are created only by
   `create_organization()`, which writes the organization and the caller's owner membership in one
   transaction. Nobody can grant themselves membership in someone else's organization.
+- **Abuse limits in the database.** Each user can create at most 2 organizations. The function
+  locks the caller's profile row first, so parallel requests can't race past the limit. Website
+  links must be `http(s)`, so a `javascript:` URL can never be stored and rendered as a link.
 - **An organization can't be orphaned.** A trigger rejects removing or demoting the last owner,
   and locks the organization row so two concurrent demotions can't both slip through.
 - **Hardened helper functions.** Policy helpers live in a schema the API doesn't expose, run with
