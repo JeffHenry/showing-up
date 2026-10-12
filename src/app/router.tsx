@@ -55,6 +55,29 @@ export const routes: RouteObject[] = [
               Component: (await import('@/features/orgs/components/OrgsPage')).OrgsPage,
             }),
           },
+          {
+            // Ranked above `orgs/:orgId` because static segments win.
+            path: 'orgs/new',
+            lazy: async () => ({
+              Component: (await import('@/features/orgs/components/CreateOrgPage')).CreateOrgPage,
+            }),
+          },
+          {
+            // Lazy like the pages: it loads the Supabase client, which the initial bundle excludes.
+            path: 'orgs/:orgId',
+            lazy: async () => ({
+              Component: (await import('@/app/layouts/OrgLayout')).OrgLayout,
+            }),
+            children: [
+              {
+                index: true,
+                lazy: async () => ({
+                  Component: (await import('@/features/orgs/components/OrgDashboardPage'))
+                    .OrgDashboardPage,
+                }),
+              },
+            ],
+          },
         ],
       },
       {

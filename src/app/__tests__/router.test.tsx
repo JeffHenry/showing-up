@@ -66,6 +66,27 @@ describe('app routes', () => {
     });
   });
 
+  it.each([['/orgs/new'], ['/orgs/00000000-0000-0000-0000-0000000000b1']])(
+    'protects %s, keeping it as the place to return to after signing in',
+    async (path) => {
+      const { router } = renderRoutes(routes, { route: path, auth: 'signedOut' });
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Sign in to ShowingUp' }),
+      ).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe('/login');
+      expect(new URLSearchParams(router.state.location.search).get('next')).toBe(path);
+    },
+  );
+
+  it('serves the create-organization form at /orgs/new, not as an organization ID', async () => {
+    renderRoutes(routes, { route: '/orgs/new', auth: 'signedIn' });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'New organization' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows the signed-in landing page and account controls to signed-in users', async () => {
     renderRoutes(routes, { route: '/orgs', auth: 'signedIn' });
 

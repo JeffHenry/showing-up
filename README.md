@@ -10,8 +10,8 @@ phone, and gives coordinators an approval queue for logged hours and exportable 
 multi-tenant: a person can volunteer at one organization and coordinate at another, with
 permissions enforced by the database itself rather than by the UI.
 
-> **Live site:** [showing-up.vercel.app](https://showing-up.vercel.app) (sign-in works today;
-> organizations and scheduling arrive next) · **Screenshots:** _coming with the MVP_
+> **Live site:** [showing-up.vercel.app](https://showing-up.vercel.app) (sign in and create an
+> organization today; invites and scheduling arrive next) · **Screenshots:** _coming with the MVP_
 
 ---
 
@@ -45,7 +45,9 @@ README is updated with every merged PR.
 - [x] **Auth:** email (6-digit code + link) and Google sign-in, session context, protected routes
   - [x] Configuration: email templates, Resend delivery, Google OAuth, setup runbook
   - [x] Sign-in UI, session handling, protected routes
-- [ ] **Organizations:** create, list, switch; creator becomes owner
+- [x] **Organizations:** create, list, switch; creator becomes owner
+  - [x] Database: optional profile fields, 2-per-user creation limit
+  - [x] Organization list, create form, organization switcher, `OrgContext`
 - [ ] **Invites:** generate link, redeem via RPC
 - [ ] **Shifts:** create/edit/delete for coordinators, list with cursor pagination
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
@@ -216,6 +218,9 @@ the API directly gets exactly the same answers as the UI. See
   PKCE flow with an explicit code exchange. Email is delivered via Resend from a domain passing
   SPF, DKIM, and DMARC. The post-sign-in redirect accepts only same-site paths (no open redirects),
   and signing out clears every cached query. See [ADR 0007](docs/adr/0007-authentication.md).
+- **Organization pages don't confirm what you can't see.** A missing organization and one you
+  don't belong to get the same "not found" answer. See
+  [ADR 0008](docs/adr/0008-organizations-in-the-app.md).
 
 **Planned**
 
@@ -235,8 +240,8 @@ the API directly gets exactly the same answers as the UI. See
 - **Unit & integration (Vitest + React Testing Library):** behavior-focused tests that query by
   role and label, with `user-event` for realistic keyboard and pointer interaction.
 - **Shared render helper:** `renderWithProviders()` mounts components inside the same providers the
-  app uses (a fresh TanStack Query client per test and a data router), so tests can drive URLs,
-  route params, and search params.
+  app uses (a fresh TanStack Query client per test, auth and organization context, and a data
+  router), so tests can drive URLs, route params, search params, and the signed-in user's role.
 - **Network mocking with MSW:** requests are intercepted at the HTTP layer, so real client code
   runs against fake responses. Any request without a handler **fails the test**, so nothing
   reaches a real network by accident.
@@ -347,5 +352,8 @@ npm run dev
 - **Vitest instead of Jest.** Same API and the same Testing Library ecosystem, without a second
   transform pipeline that drifts from the production build.
   See [ADR 0002](docs/adr/0002-vitest-over-jest.md).
+- **Organization IDs in URLs, not slugs.** `/orgs/3f2c…` is less friendly than
+  `/orgs/riverside-food-bank`, but links survive renames and need no lookup. See
+  [ADR 0008](docs/adr/0008-organizations-in-the-app.md).
 - **SPA + Supabase rather than a server-rendered framework.** Simpler hosting and a clear security
   boundary in the database, at the cost of SEO on public pages (not a goal for this app).

@@ -1,14 +1,27 @@
 import { screen } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { http, HttpResponse } from 'msw';
+import { useLocation } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { AuthProvider } from '@/context/AuthProvider';
 import { AuthCallbackPage } from '@/features/auth/components/AuthCallbackPage';
+import { isFreshSignIn } from '@/lib/redirects';
 import { supabase } from '@/lib/supabase';
 import { testSession } from '@/test/fixtures/auth';
 import { AUTH_URL, authHandlers } from '@/test/msw/auth';
 import { server } from '@/test/msw/server';
 import { renderRoutes } from '@/test/render';
+
+/** Stands in for the page after sign-in, reporting whether it arrived as a fresh sign-in. */
+function Landing({ title }: { title: string }) {
+  const location = useLocation();
+  return (
+    <>
+      <h1>{title}</h1>
+      <p>{isFreshSignIn(location.state) ? 'Fresh sign-in' : 'Not a fresh sign-in'}</p>
+    </>
+  );
+}
 
 const routes = [
   {
@@ -19,7 +32,7 @@ const routes = [
       </AuthProvider>
     ),
   },
-  { path: '/orgs', element: <h1>Organizations page</h1> },
+  { path: '/orgs', element: <Landing title="Organizations page" /> },
 ];
 
 function renderCallback(query: string) {
@@ -33,6 +46,7 @@ describe('AuthCallbackPage', () => {
     renderCallback('next=%2Forgs&token_hash=abc123&type=email');
 
     expect(await screen.findByRole('heading', { name: 'Organizations page' })).toBeInTheDocument();
+    expect(screen.getByText('Fresh sign-in')).toBeInTheDocument();
   });
 
   it('completes Google sign-in by exchanging the code with the stored PKCE verifier', async () => {
