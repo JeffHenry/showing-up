@@ -21,14 +21,15 @@ describe('LandingPage', () => {
     ]);
   });
 
-  it('links to the source and says sign-in is not available yet', () => {
+  it('leads with sign-in and links to the source', () => {
     renderWithProviders(<LandingPage />);
 
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
     expect(screen.getByRole('link', { name: 'View the source on GitHub' })).toHaveAttribute(
       'href',
       REPO_URL,
     );
-    expect(screen.getByText(/sign-in and scheduling arrive/i)).toBeInTheDocument();
+    expect(screen.getByText(/organizations and scheduling are next/i)).toBeInTheDocument();
   });
 
   it('has no detectable accessibility violations', async () => {

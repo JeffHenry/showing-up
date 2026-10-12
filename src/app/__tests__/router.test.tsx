@@ -55,6 +55,26 @@ describe('app routes', () => {
     });
   });
 
+  it('sends signed-out visitors from a private page to sign in, then shows the sign-in page', async () => {
+    renderRoutes(routes, { route: '/orgs', auth: 'signedOut' });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Sign in to ShowingUp' }),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.title).toBe('Sign in · ShowingUp');
+    });
+  });
+
+  it('shows the signed-in landing page and account controls to signed-in users', async () => {
+    renderRoutes(routes, { route: '/orgs', auth: 'signedIn' });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Your organizations' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+  });
+
   it('moves focus to the main content after navigating', async () => {
     const { user } = renderRoutes(routes, { route: '/does-not-exist' });
 
