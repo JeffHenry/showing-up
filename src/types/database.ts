@@ -51,14 +51,14 @@ isOneToOne: false
                   ]
                 },"organizations": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"name": string,"slug": string,"timezone": string
+                    "contact_email": string | null,"created_at": string,"created_by": string | null,"description": string | null,"id": string,"name": string,"slug": string,"timezone": string,"website_url": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"name": string,"slug": string,"timezone"?: string
+                    "contact_email"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"name": string,"slug": string,"timezone"?: string,"website_url"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"name"?: string,"slug"?: string,"timezone"?: string
+                    "contact_email"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"name"?: string,"slug"?: string,"timezone"?: string,"website_url"?: string | null
                   }
                   Relationships: [
                     {
@@ -90,13 +90,16 @@ isOneToOne: false
           }
           Functions: {
             "create_organization":
-{ Args: { "p_name": string,"p_slug": string,"p_timezone"?: string }; Returns: {
-              "created_at": string,
+{ Args: { "p_contact_email"?: string,"p_description"?: string,"p_name": string,"p_slug": string,"p_timezone"?: string,"p_website_url"?: string }; Returns: {
+              "contact_email": string | null,
+"created_at": string,
 "created_by": string | null,
+"description": string | null,
 "id": string,
 "name": string,
 "slug": string,
-"timezone": string
+"timezone": string,
+"website_url": string | null
             }
                           SetofOptions: {
         from: "*"
