@@ -3,12 +3,19 @@ import { render, type RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
+import { AuthContext, type AuthContextValue } from '@/context/authContext';
 import { createQueryClient } from '@/lib/queryClient';
+import { testSession } from '@/test/fixtures/auth';
 
 interface BaseOptions extends Omit<RenderOptions, 'wrapper'> {
   /** Initial URL, including any search params. Defaults to `/`. */
   route?: string;
   queryClient?: QueryClient;
+  /**
+   * Fake auth state. Defaults to signed out; `'signedIn'` uses the test session. Tests of the real
+   * session logic render `<AuthProvider>` themselves, which overrides this.
+   */
+  auth?: 'signedOut' | 'signedIn' | 'loading' | Partial<AuthContextValue>;
 }
 
 interface RenderWithProvidersOptions extends BaseOptions {
@@ -27,16 +34,34 @@ export function createTestQueryClient(): QueryClient {
   return queryClient;
 }
 
+function fakeAuth(auth: BaseOptions['auth'] = 'signedOut'): AuthContextValue {
+  const signedOut: AuthContextValue = {
+    status: 'unauthenticated',
+    session: null,
+    user: null,
+    signOut: () => Promise.resolve(),
+  };
+  if (auth === 'signedOut') return signedOut;
+  if (auth === 'loading') return { ...signedOut, status: 'loading' };
+  if (auth === 'signedIn') {
+    const session = testSession();
+    return { ...signedOut, status: 'authenticated', session, user: session.user };
+  }
+  return { ...signedOut, ...auth };
+}
+
 function renderRouter(
   routes: RouteObject[],
-  { route = '/', queryClient = createTestQueryClient(), ...renderOptions }: BaseOptions,
+  { route = '/', queryClient = createTestQueryClient(), auth, ...renderOptions }: BaseOptions,
 ) {
   const router = createMemoryRouter(routes, { initialEntries: [route] });
   const user = userEvent.setup();
 
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthContext value={fakeAuth(auth)}>
+        <RouterProvider router={router} />
+      </AuthContext>
     </QueryClientProvider>,
     renderOptions,
   );
@@ -45,8 +70,8 @@ function renderRouter(
 }
 
 /**
- * Renders UI inside the same providers the app uses: a fresh QueryClient and a data router.
- * Returns Testing Library's result plus a `user` for realistic interactions.
+ * Renders UI inside the same providers the app uses: a fresh QueryClient, auth state, and a data
+ * router. Returns Testing Library's result plus a `user` for realistic interactions.
  *
  * The router is created once per render, so `rerender` will not swap the routed element.
  */

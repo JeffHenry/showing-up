@@ -29,6 +29,7 @@ export default defineConfig({
         'src/lib/**',
         'src/app/**',
         'src/hooks/**',
+        'src/context/**',
         'src/components/common/**',
       ],
       exclude: ['**/__tests__/**', '**/*.test.{ts,tsx}'],

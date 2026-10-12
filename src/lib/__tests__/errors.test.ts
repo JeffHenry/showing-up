@@ -1,0 +1,61 @@
+import {
+  AuthApiError,
+  AuthPKCECodeVerifierMissingError,
+  AuthRetryableFetchError,
+} from '@supabase/supabase-js';
+import { describe, expect, it } from 'vitest';
+import { fromAuthErrorCode, toAppError } from '@/lib/errors';
+
+describe('toAppError', () => {
+  it.each([
+    [
+      'email rate limit',
+      new AuthApiError('rate', 429, 'over_email_send_rate_limit'),
+      'RATE_LIMITED',
+    ],
+    [
+      'request rate limit',
+      new AuthApiError('rate', 429, 'over_request_rate_limit'),
+      'RATE_LIMITED',
+    ],
+    ['an unknown 429', new AuthApiError('slow down', 429, undefined), 'RATE_LIMITED'],
+    [
+      'an expired or wrong code',
+      new AuthApiError('bad', 403, 'otp_expired'),
+      'CODE_INVALID_OR_EXPIRED',
+    ],
+    ['an invalid email', new AuthApiError('bad', 400, 'email_address_invalid'), 'INVALID_EMAIL'],
+    [
+      'an expired OAuth flow',
+      new AuthApiError('gone', 400, 'flow_state_expired'),
+      'SIGN_IN_INTERRUPTED',
+    ],
+    ['a missing PKCE verifier', new AuthPKCECodeVerifierMissingError(), 'SIGN_IN_INTERRUPTED'],
+    ['a forbidden auth request', new AuthApiError('no', 403, 'something_new'), 'NOT_AUTHORIZED'],
+    ['an auth network failure', new AuthRetryableFetchError('offline', 0), 'NETWORK'],
+    ['a fetch TypeError', new TypeError('Failed to fetch'), 'NETWORK'],
+    [
+      'a PostgREST permission error',
+      { code: '42501', message: 'permission denied' },
+      'NOT_AUTHORIZED',
+    ],
+    ['an unexpected auth error', new AuthApiError('boom', 400, 'something_new'), 'UNKNOWN'],
+    ['anything else', new Error('boom'), 'UNKNOWN'],
+  ])('maps %s', (_label, error, code) => {
+    expect(toAppError(error).code).toBe(code);
+  });
+
+  it('always includes a user-facing message', () => {
+    expect(toAppError(new Error('internal details')).message).toBe(
+      'Something went wrong. Please try again.',
+    );
+  });
+});
+
+describe('fromAuthErrorCode', () => {
+  it('maps known redirect error codes and defaults the rest', () => {
+    expect(fromAuthErrorCode('otp_expired').code).toBe('CODE_INVALID_OR_EXPIRED');
+    expect(fromAuthErrorCode('access_denied').code).toBe('UNKNOWN');
+    expect(fromAuthErrorCode(null).code).toBe('UNKNOWN');
+  });
+});

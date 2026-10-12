@@ -19,6 +19,8 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   server.resetHandlers();
+  // Supabase persists sessions and PKCE verifiers in localStorage; never leak them between tests.
+  localStorage.clear();
 });
 
 afterAll(() => {
