@@ -17,15 +17,15 @@ permissions enforced by the database itself rather than by the UI.
 
 ## Project status
 
-🚧 **In active development: Phase 0 (Foundation) is complete; the MVP (P0) is next.** This README
-is updated with every merged PR.
+🚧 **In active development: building the MVP (P0).** Phase 0 (Foundation) is complete. This
+README is updated with every merged PR.
 
-| Phase                | Scope                                                                                              | Status      |
-| -------------------- | -------------------------------------------------------------------------------------------------- | ----------- |
-| **0. Foundation**    | Tooling, test harness, CI/CD, database, app shell                                                  | ✅ Complete |
-| **P0. MVP**          | Auth, organizations, invites, shifts, claiming shifts, role-based navigation, demo data            | ⏳ Next     |
-| **P1. Full product** | Hours approval, week calendar, recurring shifts, reports & CSV export, email reminders, monitoring | ⏳ Planned  |
-| **P2. Stretch**      | Waitlists, skills matching, realtime spot counts, offline PWA, dark mode                           | ⏳ Planned  |
+| Phase                | Scope                                                                                              | Status         |
+| -------------------- | -------------------------------------------------------------------------------------------------- | -------------- |
+| **0. Foundation**    | Tooling, test harness, CI/CD, database, app shell                                                  | ✅ Complete    |
+| **P0. MVP**          | Auth, organizations, invites, shifts, claiming shifts, role-based navigation, demo data            | 🔄 In progress |
+| **P1. Full product** | Hours approval, week calendar, recurring shifts, reports & CSV export, email reminders, monitoring | ⏳ Planned     |
+| **P2. Stretch**      | Waitlists, skills matching, realtime spot counts, offline PWA, dark mode                           | ⏳ Planned     |
 
 <details>
 <summary><strong>Phase 0 checklist</strong></summary>
@@ -36,6 +36,22 @@ is updated with every merged PR.
 - [x] **0.4a** Database core: local Supabase stack, multi-tenant schema, RLS, pgTAP tests, generated types, CI database checks
 - [x] **0.4b** Environments: staging & production Supabase projects, migration deploy workflow, typed client
 - [x] **0.5** App shell: router, layouts, providers, error boundaries, loading/empty states
+
+</details>
+
+<details>
+<summary><strong>P0 (MVP) checklist</strong></summary>
+
+- [ ] **Auth:** email (6-digit code + link) and Google sign-in, session context, protected routes
+  - [x] Configuration: email templates, Resend delivery, Google OAuth, setup runbook
+  - [ ] Sign-in UI, session handling, protected routes
+- [ ] **Organizations:** create, list, switch; creator becomes owner
+- [ ] **Invites:** generate link, redeem via RPC
+- [ ] **Shifts:** create/edit/delete for coordinators, list with cursor pagination
+- [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
+- [ ] **My Shifts** view
+- [ ] **Role-based navigation**
+- [ ] **Seed data and demo accounts**
 
 </details>
 
@@ -191,6 +207,11 @@ the API directly gets exactly the same answers as the UI. See
 
 **Planned**
 
+- **Passwordless and Google sign-in** (configuration in place; UI in progress). Email sign-in
+  sends a 6-digit code and a link that's verified in the app, so it works across devices and
+  survives mail scanners; Google uses the OAuth PKCE flow. Email is delivered via Resend from a
+  domain with SPF, DKIM, and DMARC. Post-login redirects accept only same-site paths. See
+  [ADR 0007](docs/adr/0007-authentication.md).
 - **Race-free shift claiming.** `claim_shift()` locks the shift row (`SELECT … FOR UPDATE`) before
   counting confirmed signups, so two volunteers can't both take the last spot.
 - **Invite tokens are hashed.** Only a SHA-256 hash is stored; links expire after 7 days and are

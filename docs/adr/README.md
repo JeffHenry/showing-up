@@ -12,3 +12,4 @@ such rather than edited.
 | [0004](0004-database-authorization-model.md)          | Database authorization model                       | Accepted |
 | [0005](0005-environments-and-database-deployments.md) | Environments and database deployments              | Accepted |
 | [0006](0006-app-shell-routing-and-error-handling.md)  | App shell, routing, and error handling             | Accepted |
+| [0007](0007-authentication.md)                        | Authentication                                     | Accepted |
