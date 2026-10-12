@@ -23,3 +23,16 @@ export function safeNextPath(next: string | null | undefined): string {
 export function loginPath(next: string): string {
   return `/login?next=${encodeURIComponent(next)}`;
 }
+
+/**
+ * Router navigation state for the first page after signing in, so pages can tell a fresh sign-in
+ * from a later visit (e.g. `/orgs` opens a user's only organization straight after sign-in).
+ */
+export const SIGNED_IN_STATE = { signedIn: true } as const;
+
+/** Whether `location.state` marks the first navigation after signing in. */
+export function isFreshSignIn(state: unknown): boolean {
+  return (
+    typeof state === 'object' && state !== null && 'signedIn' in state && state.signedIn === true
+  );
+}

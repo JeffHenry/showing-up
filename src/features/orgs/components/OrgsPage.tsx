@@ -1,25 +1,77 @@
-import { Building2 } from 'lucide-react';
+import { Building2, Plus } from 'lucide-react';
+import { Link, Navigate, useLocation } from 'react-router';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ErrorFallback } from '@/components/common/ErrorFallback';
 import { PageHeader } from '@/components/common/PageHeader';
-import { useAuth } from '@/context/useAuth';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useMyOrganizations } from '@/features/orgs/api/useMyOrganizations';
+import { OrgListItem } from '@/features/orgs/components/OrgListItem';
 import { APP_NAME } from '@/lib/constants';
+import { isFreshSignIn } from '@/lib/redirects';
 
-/** Signed-in landing page. Placeholder until the Organizations feature replaces it. */
+const newOrgButton = (
+  <Button asChild>
+    <Link to="/orgs/new">
+      <Plus aria-hidden="true" data-icon="inline-start" />
+      New organization
+    </Link>
+  </Button>
+);
+
+/** The signed-in home page: the user's organizations, or how to get started. */
 export function OrgsPage() {
-  const { user } = useAuth();
+  const { data: orgs, isPending, isError, refetch } = useMyOrganizations();
+  const location = useLocation();
+
+  // Straight after signing in, someone with a single organization (most volunteers) skips the list.
+  const [onlyOrg, ...otherOrgs] = orgs ?? [];
+  if (isFreshSignIn(location.state) && onlyOrg && otherOrgs.length === 0) {
+    return <Navigate to={`/orgs/${onlyOrg.id}`} replace />;
+  }
+
+  const hasOrgs = orgs !== undefined && orgs.length > 0;
 
   return (
     <div className="space-y-6">
       <title>{`Your organizations · ${APP_NAME}`}</title>
       <PageHeader
         title="Your organizations"
-        description={user?.email ? `Signed in as ${user.email}` : undefined}
+        description={hasOrgs ? 'Choose an organization to open.' : undefined}
+        actions={hasOrgs ? newOrgButton : undefined}
       />
-      <EmptyState
-        icon={Building2}
-        title="Organizations are coming next"
-        description="You're signed in. Creating and joining organizations is the next feature being built."
-      />
+      {isPending ? (
+        <div role="status" className="space-y-3">
+          <span className="sr-only">Loading your organizations…</span>
+          <Skeleton className="h-18 w-full" />
+          <Skeleton className="h-18 w-full" />
+        </div>
+      ) : isError ? (
+        <ErrorFallback
+          title="We couldn't load your organizations"
+          message="Check your connection and try again."
+          reset={() => {
+            void refetch();
+          }}
+        />
+      ) : hasOrgs ? (
+        <ul className="space-y-3">
+          {orgs.map((org) => (
+            <OrgListItem key={org.id} org={org} />
+          ))}
+        </ul>
+      ) : (
+        <EmptyState
+          icon={Building2}
+          title="You're not in any organizations yet"
+          description="Create one for your nonprofit, or ask its coordinator for an invite link to join."
+          action={
+            <Button asChild>
+              <Link to="/orgs/new">Create an organization</Link>
+            </Button>
+          }
+        />
+      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { useAuth } from '@/context/useAuth';
 import { exchangeOAuthCode, verifyEmailLink } from '@/features/auth/api/authApi';
 import { APP_NAME } from '@/lib/constants';
 import { fromAuthErrorCode, toAppError, type AppError } from '@/lib/errors';
-import { loginPath, safeNextPath } from '@/lib/redirects';
+import { loginPath, safeNextPath, SIGNED_IN_STATE } from '@/lib/redirects';
 
 /**
  * Where email links (`?token_hash=`) and Google sign-in (`?code=`) return to. Verifies the
@@ -40,7 +40,7 @@ export function AuthCallbackPage() {
     });
   }, [hasParamsError, tokenHash, code]);
 
-  if (status === 'authenticated') return <Navigate to={next} replace />;
+  if (status === 'authenticated') return <Navigate to={next} replace state={SIGNED_IN_STATE} />;
 
   const error = paramsError ?? verifyError;
   if (!error) {

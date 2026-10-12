@@ -39,6 +39,19 @@ describe('toAppError', () => {
       { code: '42501', message: 'permission denied' },
       'NOT_AUTHORIZED',
     ],
+    [
+      'a taken organization short name',
+      { code: 'P0001', message: 'SLUG_TAKEN', details: 'In use.' },
+      'SLUG_TAKEN',
+    ],
+    [
+      'the organization creation limit',
+      { code: 'P0001', message: 'ORG_LIMIT_REACHED' },
+      'ORG_LIMIT_REACHED',
+    ],
+    ['removing the last owner', { code: 'P0001', message: 'LAST_OWNER' }, 'LAST_OWNER'],
+    ['an unrecognized database error', { code: 'P0001', message: 'SOMETHING_NEW' }, 'UNKNOWN'],
+    ['a rejected value', { code: '23514', message: 'violates check constraint' }, 'INVALID_INPUT'],
     ['an unexpected auth error', new AuthApiError('boom', 400, 'something_new'), 'UNKNOWN'],
     ['anything else', new Error('boom'), 'UNKNOWN'],
   ])('maps %s', (_label, error, code) => {

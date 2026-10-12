@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SIGNED_IN_PATH, loginPath, safeNextPath } from '@/lib/redirects';
+import {
+  DEFAULT_SIGNED_IN_PATH,
+  isFreshSignIn,
+  loginPath,
+  safeNextPath,
+  SIGNED_IN_STATE,
+} from '@/lib/redirects';
 
 describe('safeNextPath', () => {
   it.each([
@@ -29,5 +35,21 @@ describe('safeNextPath', () => {
 describe('loginPath', () => {
   it('encodes where to return after signing in', () => {
     expect(loginPath('/orgs/42?tab=hours')).toBe('/login?next=%2Forgs%2F42%3Ftab%3Dhours');
+  });
+});
+
+describe('isFreshSignIn', () => {
+  it('recognizes the state the sign-in pages navigate with', () => {
+    expect(isFreshSignIn(SIGNED_IN_STATE)).toBe(true);
+  });
+
+  it.each([
+    ['no state', null],
+    ['undefined', undefined],
+    ['other state', { from: '/orgs' }],
+    ['a non-boolean flag', { signedIn: 'yes' }],
+    ['a string', 'signedIn'],
+  ])('ignores %s', (_label, state) => {
+    expect(isFreshSignIn(state)).toBe(false);
   });
 });

@@ -1,16 +1,29 @@
 import { screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { delay, http, HttpResponse } from 'msw';
+import { useLocation } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '@/context/AuthProvider';
 import { LoginPage } from '@/features/auth/components/LoginPage';
 import { redirectTo } from '@/lib/navigation';
+import { isFreshSignIn } from '@/lib/redirects';
 import { queryKeys } from '@/lib/queryKeys';
 import { AUTH_URL, authHandlers } from '@/test/msw/auth';
 import { server } from '@/test/msw/server';
 import { renderRoutes } from '@/test/render';
 
 vi.mock('@/lib/navigation', () => ({ redirectTo: vi.fn() }));
+
+/** Stands in for the page after sign-in, reporting whether it arrived as a fresh sign-in. */
+function Landing({ title }: { title: string }) {
+  const location = useLocation();
+  return (
+    <>
+      <h1>{title}</h1>
+      <p>{isFreshSignIn(location.state) ? 'Fresh sign-in' : 'Not a fresh sign-in'}</p>
+    </>
+  );
+}
 
 // The real AuthProvider, so a successful sign-in flips the session and LoginPage redirects.
 const routes = [
@@ -22,8 +35,8 @@ const routes = [
       </AuthProvider>
     ),
   },
-  { path: '/orgs', element: <h1>Organizations page</h1> },
-  { path: '/orgs/:orgId', element: <h1>Specific organization</h1> },
+  { path: '/orgs', element: <Landing title="Organizations page" /> },
+  { path: '/orgs/:orgId', element: <Landing title="Specific organization" /> },
 ];
 
 function renderLogin(route = '/login') {
@@ -138,6 +151,7 @@ describe('LoginPage: code step', () => {
     expect(
       await screen.findByRole('heading', { name: 'Specific organization' }),
     ).toBeInTheDocument();
+    expect(screen.getByText('Fresh sign-in')).toBeInTheDocument();
   });
 
   it('can resend the code or go back to change the email', async () => {
@@ -178,12 +192,13 @@ describe('LoginPage: already signed in', () => {
     renderRoutes(
       [
         { path: '/login', element: <LoginPage /> },
-        { path: '/orgs', element: <h1>Organizations page</h1> },
+        { path: '/orgs', element: <Landing title="Organizations page" /> },
       ],
       { route: '/login', auth: 'signedIn' },
     );
 
     expect(await screen.findByRole('heading', { name: 'Organizations page' })).toBeInTheDocument();
+    expect(screen.getByText('Fresh sign-in')).toBeInTheDocument();
   });
 });
 

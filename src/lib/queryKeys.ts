@@ -6,4 +6,10 @@ export const queryKeys = {
   auth: {
     providers: () => ['auth', 'providers'] as const,
   },
+  orgs: {
+    /** Prefix for every organization query; invalidate this after creating or changing one. */
+    all: ['orgs'] as const,
+    /** The signed-in user's organizations and their role in each. */
+    mine: () => ['orgs', 'mine'] as const,
+  },
 };
