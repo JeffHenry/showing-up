@@ -1,0 +1,105 @@
+<!doctype html>
+<!--
+  ShowingUp sign-in email: used for both the "Magic Link" and "Confirm signup" templates.
+  Supabase fills in the {{ .Token }}, {{ .TokenHash }} and {{ .RedirectTo }} variables.
+
+  The link points at the app's /auth/callback (passed by the app as emailRedirectTo, which already
+  contains "?next=..."), so "&token_hash=..." is appended. The app verifies the token hash with
+  JavaScript, which means the link works on any device and isn't used up by mail scanners that
+  pre-open links. The 6-digit code is the fallback that works everywhere.
+
+  Hosted projects: paste this file into Authentication > Email Templates (see docs/runbooks/auth-setup.md).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Your ShowingUp sign-in code</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f5f5f5">
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="background-color: #f5f5f5; padding: 32px 16px"
+    >
+      <tr>
+        <td align="center">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              max-width: 480px;
+              background-color: #ffffff;
+              border: 1px solid #e5e5e5;
+              border-radius: 12px;
+              font-family:
+                -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+              color: #171717;
+            "
+          >
+            <tr>
+              <td style="padding: 32px 32px 8px">
+                <p style="margin: 0 0 24px; font-size: 18px; font-weight: 600">ShowingUp</p>
+                <h1 style="margin: 0 0 12px; font-size: 22px; line-height: 1.3">
+                  Your sign-in code
+                </h1>
+                <p style="margin: 0 0 20px; font-size: 15px; line-height: 1.5; color: #404040">
+                  Enter this code on the sign-in page to continue:
+                </p>
+                <p
+                  style="
+                    margin: 0 0 24px;
+                    padding: 16px;
+                    background-color: #f5f5f5;
+                    border-radius: 8px;
+                    text-align: center;
+                    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+                    font-size: 32px;
+                    font-weight: 700;
+                    letter-spacing: 8px;
+                  "
+                >
+                  {{ .Token }}
+                </p>
+                <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5; color: #404040">
+                  Or sign in with one click:
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 0 24px">
+                  <tr>
+                    <td style="border-radius: 8px; background-color: #171717">
+                      <a
+                        href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email"
+                        style="
+                          display: inline-block;
+                          padding: 12px 24px;
+                          font-size: 15px;
+                          font-weight: 600;
+                          color: #ffffff;
+                          text-decoration: none;
+                        "
+                        >Sign in to ShowingUp</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 32px 32px">
+                <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #525252">
+                  The code and link expire in 15 minutes and can be used once. If you didn't try to
+                  sign in, you can ignore this email; no one can sign in without it.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
