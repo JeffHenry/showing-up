@@ -115,6 +115,9 @@ flowchart LR
 
 - **Routing:** a React Router data router; each page is code-split with the router's `lazy`, so
   it downloads only when needed and loads before the page switches (no blank flash).
+- **Signed-in visitors skip the landing page:** `/` sends them to their only organization, or to
+  their organization list. A synchronous check for a stored session shows a brief loading state
+  to returning users instead of flashing the marketing page while sign-in is confirmed.
 - **Two error layers:** a route-level error page (also catches failed chunk downloads after a
   deploy) and a feature-level `ErrorBoundary` whose "Try again" also refetches failed queries.
 - **Accessibility built into the shell:** a skip link, focus moved to the new page's content

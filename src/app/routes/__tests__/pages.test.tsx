@@ -1,11 +1,15 @@
 import { screen } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it } from 'vitest';
+import { routes } from '@/app/router';
 import { LandingPage } from '@/app/routes/LandingPage';
 import { NotFoundPage } from '@/app/routes/NotFoundPage';
 import { PrivacyPage } from '@/app/routes/PrivacyPage';
 import { PRIVACY_EMAIL, REPO_URL } from '@/lib/constants';
-import { renderWithProviders } from '@/test/render';
+import { otherTestOrg, testOrg } from '@/test/fixtures/orgs';
+import { orgHandlers } from '@/test/msw/orgs';
+import { server } from '@/test/msw/server';
+import { renderRoutes, renderWithProviders } from '@/test/render';
 
 describe('LandingPage', () => {
   it('pitches the product and its three core capabilities', () => {
@@ -29,13 +33,60 @@ describe('LandingPage', () => {
       'href',
       REPO_URL,
     );
-    expect(screen.getByText(/organizations and scheduling are next/i)).toBeInTheDocument();
+    expect(screen.getByText(/shift scheduling is next/i)).toBeInTheDocument();
   });
 
   it('has no detectable accessibility violations', async () => {
     const { container } = renderWithProviders(<LandingPage />);
 
     expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('LandingPage: signed-in visitors', () => {
+  it('opens their only organization', async () => {
+    server.use(orgHandlers.list([testOrg]));
+    renderRoutes(routes, { route: '/', auth: 'signedIn' });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: testOrg.name }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the organization list when they have several', async () => {
+    server.use(orgHandlers.list([otherTestOrg, testOrg]));
+    renderRoutes(routes, { route: '/', auth: 'signedIn' });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Your organizations' }),
+    ).toBeInTheDocument();
+  });
+
+  it('takes them into the app from the header logo', async () => {
+    server.use(orgHandlers.list([otherTestOrg, testOrg]));
+    const { user } = renderRoutes(routes, { route: '/privacy', auth: 'signedIn' });
+
+    await user.click(await screen.findByRole('link', { name: 'ShowingUp' }));
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Your organizations' }),
+    ).toBeInTheDocument();
+  });
+
+  it('waits, rather than flashing the landing page, while a stored session is confirmed', () => {
+    localStorage.setItem('sb-test-auth-token', '{}');
+    renderWithProviders(<LandingPage />, { auth: 'loading' });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Opening ShowingUp…');
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+  });
+
+  it('shows the landing page right away when no session is stored', () => {
+    renderWithProviders(<LandingPage />, { auth: 'loading' });
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Volunteer scheduling without the spreadsheets.',
+    );
   });
 });
 

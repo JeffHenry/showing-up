@@ -7,7 +7,7 @@ import { CodeStep } from '@/features/auth/components/CodeStep';
 import { EmailStep } from '@/features/auth/components/EmailStep';
 import { GoogleSignInButton } from '@/features/auth/components/GoogleSignInButton';
 import { APP_NAME } from '@/lib/constants';
-import { safeNextPath, SIGNED_IN_STATE } from '@/lib/redirects';
+import { safeNextPath, ENTRY_STATE } from '@/lib/redirects';
 
 export function LoginPage() {
   const { status } = useAuth();
@@ -20,7 +20,7 @@ export function LoginPage() {
   const forInvite = next.startsWith('/invite/');
 
   // Covers both "already signed in" and "just signed in with the code".
-  if (status === 'authenticated') return <Navigate to={next} replace state={SIGNED_IN_STATE} />;
+  if (status === 'authenticated') return <Navigate to={next} replace state={ENTRY_STATE} />;
 
   return (
     <Card>

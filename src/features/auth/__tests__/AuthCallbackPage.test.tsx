@@ -5,20 +5,20 @@ import { useLocation } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { AuthProvider } from '@/context/AuthProvider';
 import { AuthCallbackPage } from '@/features/auth/components/AuthCallbackPage';
-import { isFreshSignIn } from '@/lib/redirects';
+import { isEntryNavigation } from '@/lib/redirects';
 import { supabase } from '@/lib/supabase';
 import { testSession } from '@/test/fixtures/auth';
 import { AUTH_URL, authHandlers } from '@/test/msw/auth';
 import { server } from '@/test/msw/server';
 import { renderRoutes } from '@/test/render';
 
-/** Stands in for the page after sign-in, reporting whether it arrived as a fresh sign-in. */
+/** Stands in for the page after sign-in, reporting whether it was reached as an arrival at the app. */
 function Landing({ title }: { title: string }) {
   const location = useLocation();
   return (
     <>
       <h1>{title}</h1>
-      <p>{isFreshSignIn(location.state) ? 'Fresh sign-in' : 'Not a fresh sign-in'}</p>
+      <p>{isEntryNavigation(location.state) ? 'Arrived' : 'Not an arrival'}</p>
     </>
   );
 }
@@ -46,7 +46,7 @@ describe('AuthCallbackPage', () => {
     renderCallback('next=%2Forgs&token_hash=abc123&type=email');
 
     expect(await screen.findByRole('heading', { name: 'Organizations page' })).toBeInTheDocument();
-    expect(screen.getByText('Fresh sign-in')).toBeInTheDocument();
+    expect(screen.getByText('Arrived')).toBeInTheDocument();
   });
 
   it('completes Google sign-in by exchanging the code with the stored PKCE verifier', async () => {

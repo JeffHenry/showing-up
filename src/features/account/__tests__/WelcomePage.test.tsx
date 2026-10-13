@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import type { InitialEntry } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { routes } from '@/app/router';
-import { SIGNED_IN_STATE } from '@/lib/redirects';
+import { ENTRY_STATE } from '@/lib/redirects';
 import { testUser } from '@/test/fixtures/auth';
 import { testOrg } from '@/test/fixtures/orgs';
 import { createGate } from '@/test/gate';
@@ -59,7 +59,7 @@ describe('display name step', () => {
 
   it('still opens the only organization after naming yourself straight after sign-in', async () => {
     server.use(profileHandlers.mine(null), profileHandlers.updateOk(), orgHandlers.list([testOrg]));
-    const { user } = renderAs({ pathname: '/orgs', state: SIGNED_IN_STATE });
+    const { user } = renderAs({ pathname: '/orgs', state: ENTRY_STATE });
 
     await saveName(user, 'Jordan Lee');
 

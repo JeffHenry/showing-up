@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_SIGNED_IN_PATH,
-  isFreshSignIn,
+  isEntryNavigation,
   loginPath,
   safeNextPath,
-  SIGNED_IN_STATE,
+  ENTRY_STATE,
 } from '@/lib/redirects';
 
 describe('safeNextPath', () => {
@@ -38,18 +38,18 @@ describe('loginPath', () => {
   });
 });
 
-describe('isFreshSignIn', () => {
+describe('isEntryNavigation', () => {
   it('recognizes the state the sign-in pages navigate with', () => {
-    expect(isFreshSignIn(SIGNED_IN_STATE)).toBe(true);
+    expect(isEntryNavigation(ENTRY_STATE)).toBe(true);
   });
 
   it.each([
     ['no state', null],
     ['undefined', undefined],
     ['other state', { from: '/orgs' }],
-    ['a non-boolean flag', { signedIn: 'yes' }],
-    ['a string', 'signedIn'],
+    ['a non-boolean flag', { entry: 'yes' }],
+    ['a string', 'entry'],
   ])('ignores %s', (_label, state) => {
-    expect(isFreshSignIn(state)).toBe(false);
+    expect(isEntryNavigation(state)).toBe(false);
   });
 });

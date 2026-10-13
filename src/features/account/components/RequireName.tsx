@@ -32,7 +32,7 @@ export function RequireName() {
 
   if (!profile.full_name) {
     const next = `${location.pathname}${location.search}`;
-    // Pass the navigation state along, so a fresh sign-in is still recognised afterwards.
+    // Pass the navigation state along, so an arrival (e.g. straight after sign-in) is still recognised afterwards.
     return (
       <Navigate
         to={`/welcome?next=${encodeURIComponent(next)}`}

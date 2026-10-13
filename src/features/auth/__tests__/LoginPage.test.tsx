@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '@/context/AuthProvider';
 import { LoginPage } from '@/features/auth/components/LoginPage';
 import { redirectTo } from '@/lib/navigation';
-import { isFreshSignIn } from '@/lib/redirects';
+import { isEntryNavigation } from '@/lib/redirects';
 import { queryKeys } from '@/lib/queryKeys';
 import { createGate } from '@/test/gate';
 import { AUTH_URL, authHandlers } from '@/test/msw/auth';
@@ -15,13 +15,13 @@ import { renderRoutes } from '@/test/render';
 
 vi.mock('@/lib/navigation', () => ({ redirectTo: vi.fn() }));
 
-/** Stands in for the page after sign-in, reporting whether it arrived as a fresh sign-in. */
+/** Stands in for the page after sign-in, reporting whether it was reached as an arrival at the app. */
 function Landing({ title }: { title: string }) {
   const location = useLocation();
   return (
     <>
       <h1>{title}</h1>
-      <p>{isFreshSignIn(location.state) ? 'Fresh sign-in' : 'Not a fresh sign-in'}</p>
+      <p>{isEntryNavigation(location.state) ? 'Arrived' : 'Not an arrival'}</p>
     </>
   );
 }
@@ -154,7 +154,7 @@ describe('LoginPage: code step', () => {
     expect(
       await screen.findByRole('heading', { name: 'Specific organization' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Fresh sign-in')).toBeInTheDocument();
+    expect(screen.getByText('Arrived')).toBeInTheDocument();
   });
 
   it('can resend the code or go back to change the email', async () => {
@@ -211,7 +211,7 @@ describe('LoginPage: already signed in', () => {
     );
 
     expect(await screen.findByRole('heading', { name: 'Organizations page' })).toBeInTheDocument();
-    expect(screen.getByText('Fresh sign-in')).toBeInTheDocument();
+    expect(screen.getByText('Arrived')).toBeInTheDocument();
   });
 });
 
