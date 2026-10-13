@@ -28,6 +28,10 @@ describe('organization pages', () => {
       'href',
       `/orgs/${testOrg.id}/members#invite`,
     );
+    expect(screen.getByRole('link', { name: 'New shift' })).toHaveAttribute(
+      'href',
+      `/orgs/${testOrg.id}/shifts/new`,
+    );
     expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument();
     expect(screen.getByText('Feeding families since 1998.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'hello@riverside.example' })).toHaveAttribute(
@@ -126,16 +130,27 @@ describe('organization pages', () => {
       within(nav)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Overview']);
+    ).toEqual(['Overview', 'Shifts']);
+    // Volunteers browse shifts but don't create them.
+    expect(screen.getByRole('link', { name: 'View shifts' })).toHaveAttribute(
+      'href',
+      `/orgs/${otherTestOrg.id}/shifts`,
+    );
+    expect(screen.queryByRole('link', { name: 'New shift' })).not.toBeInTheDocument();
     // Eastside Pantry has no optional details, so there's no About card.
     expect(screen.queryByRole('heading', { name: 'About' })).not.toBeInTheDocument();
   });
 
-  it('offers Overview and Members in the organization navigation', async () => {
+  it('offers Overview, Shifts, and Members in the organization navigation', async () => {
     server.use(orgHandlers.list([testOrg]), inviteHandlers.pending([]));
     const { user } = renderOrg();
 
     const nav = await screen.findByRole('navigation', { name: 'Organization' });
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Overview', 'Shifts', 'Members']);
     expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute(
       'aria-current',
       'page',

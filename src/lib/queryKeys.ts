@@ -30,4 +30,13 @@ export const queryKeys = {
     /** Invites used in the last 30 days, with who used and sent them. */
     accepted: (orgId: string) => ['invites', orgId, 'accepted'] as const,
   },
+  shifts: {
+    all: ['shifts'] as const,
+    /** Prefix for every list of an organization's shifts; invalidate it after any change. */
+    lists: (orgId: string) => ['shifts', orgId, 'list'] as const,
+    /** One page-by-page list: upcoming (including in progress) or past shifts. */
+    list: (orgId: string, filters: { when: 'upcoming' | 'past' }) =>
+      ['shifts', orgId, 'list', filters] as const,
+    detail: (shiftId: string) => ['shifts', 'detail', shiftId] as const,
+  },
 };

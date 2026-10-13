@@ -69,8 +69,8 @@ export function LandingPage() {
           </Button>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          In active development: organizations, invites, and member management work today; shift
-          scheduling is next.
+          In active development: organizations, invites, members, and shift scheduling work today;
+          claiming shifts is next.
         </p>
       </section>
 
