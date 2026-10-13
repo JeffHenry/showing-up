@@ -23,7 +23,39 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "memberships": {
+            "invites": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"expires_at": string,"id": string,"org_id": string,"role": Database["public"]['Enums']["membership_role"],"token_hash": string,"used_at": string | null,"used_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"expires_at"?: string,"id"?: string,"org_id": string,"role": Database["public"]['Enums']["membership_role"],"token_hash": string,"used_at"?: string | null,"used_by"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"expires_at"?: string,"id"?: string,"org_id"?: string,"role"?: Database["public"]['Enums']["membership_role"],"token_hash"?: string,"used_at"?: string | null,"used_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "invites_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invites_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invites_used_by_fkey"
+      columns: ["used_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"memberships": {
                   Row: {
                     "created_at": string,"id": string,"org_id": string,"role": Database["public"]['Enums']["membership_role"],"user_id": string
                   }
@@ -89,7 +121,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "create_organization":
+            "create_invite":
+{ Args: { "p_org_id": string,"p_role"?: Database["public"]['Enums']["membership_role"] }; Returns: {
+              "expires_at": string,"invite_id": string,"token": string
+            }[]
+                           },
+"create_organization":
 { Args: { "p_contact_email"?: string,"p_description"?: string,"p_name": string,"p_slug": string,"p_timezone"?: string,"p_website_url"?: string }; Returns: {
               "contact_email": string | null,
 "created_at": string,
@@ -106,7 +143,15 @@ isOneToOne: false
         to: "organizations"
         isOneToOne: true
         isSetofReturn: false
-      } }
+      } },
+"get_invite":
+{ Args: { "p_token": string }; Returns: {
+              "org_id": string,"org_name": string,"role": Database["public"]['Enums']["membership_role"],"status": string
+            }[]
+                           },
+"redeem_invite":
+{ Args: { "p_token": string }; Returns: string
+                           }
           }
           Enums: {
             "membership_role": "owner"|"coordinator"|"volunteer"
