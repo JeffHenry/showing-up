@@ -1,5 +1,7 @@
 import type { RequestHandler } from 'msw';
 import { authHandlers } from '@/test/msw/auth';
+import { inviteHandlers } from '@/test/msw/invites';
+import { memberHandlers } from '@/test/msw/members';
 import { orgHandlers } from '@/test/msw/orgs';
 import { profileHandlers, testUserName } from '@/test/msw/profiles';
 
@@ -14,4 +16,7 @@ export const handlers: RequestHandler[] = [
   orgHandlers.list([]),
   // Signed-in pages check for a display name; the test user already has one.
   profileHandlers.mine(testUserName),
+  // The Members page also loads the roster and recently accepted invites.
+  memberHandlers.list([]),
+  inviteHandlers.accepted([]),
 ];

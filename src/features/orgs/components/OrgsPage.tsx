@@ -19,6 +19,16 @@ const newOrgButton = (
   </Button>
 );
 
+/** The organization a member just left, from the navigation state `LeaveOrganization` sets. */
+function leftOrgName(state: unknown): string | null {
+  return typeof state === 'object' &&
+    state !== null &&
+    'left' in state &&
+    typeof state.left === 'string'
+    ? state.left
+    : null;
+}
+
 /** The signed-in home page: the user's organizations, or how to get started. */
 export function OrgsPage() {
   const { data: orgs, isPending, isError, refetch } = useMyOrganizations();
@@ -31,6 +41,7 @@ export function OrgsPage() {
   }
 
   const hasOrgs = orgs !== undefined && orgs.length > 0;
+  const left = leftOrgName(location.state);
 
   return (
     <div className="space-y-6">
@@ -40,6 +51,9 @@ export function OrgsPage() {
         description={hasOrgs ? 'Choose an organization to open.' : undefined}
         actions={hasOrgs ? newOrgButton : undefined}
       />
+      <p role="status" className={left ? 'text-sm' : 'sr-only'}>
+        {left ? `You left ${left}.` : ''}
+      </p>
       {isPending ? (
         <div role="status" className="space-y-3">
           <span className="sr-only">Loading your organizations…</span>

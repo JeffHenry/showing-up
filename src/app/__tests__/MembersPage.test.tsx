@@ -3,15 +3,24 @@ import { axe } from 'jest-axe';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import type { MembershipRole } from '@/context/orgContext';
-import { MembersPage } from '@/features/invites/components/MembersPage';
+import { MembersPage } from '@/app/routes/MembersPage';
+import { routes } from '@/app/router';
+import type { MyOrganization } from '@/features/orgs/types';
 import type { PendingInvite } from '@/features/invites/types';
 import { createGate } from '@/test/gate';
-import { testCoordinatorInvite, testInvite, testInviteToken } from '@/test/fixtures/invites';
+import {
+  testAcceptedInvite,
+  testCoordinatorInvite,
+  testInvite,
+  testInviteToken,
+} from '@/test/fixtures/invites';
+import { testMembers } from '@/test/fixtures/members';
 import { testOrg } from '@/test/fixtures/orgs';
 import { inviteHandlers } from '@/test/msw/invites';
+import { memberHandlers } from '@/test/msw/members';
 import { REST_URL } from '@/test/msw/rest';
 import { server } from '@/test/msw/server';
-import { renderWithProviders } from '@/test/render';
+import { renderRoutes, renderWithProviders } from '@/test/render';
 
 const inviteLink = `${window.location.origin}/invite/${testInviteToken}`;
 
@@ -19,10 +28,20 @@ function renderMembers(role: MembershipRole = 'owner') {
   return renderWithProviders(<MembersPage />, { auth: 'signedIn', org: role });
 }
 
+/** Pending invites are requested with `used_at=is.null`; accepted ones use another filter. */
+function isPendingRequest(request: Request) {
+  return new URL(request.url).searchParams.get('used_at') === 'is.null';
+}
+
 /** A pending-invites endpoint backed by a list the test can change (e.g. after a revoke). */
+
 function pendingInvitesStore(initial: PendingInvite[]) {
   let invites = initial;
-  server.use(http.get(`${REST_URL}/invites`, () => HttpResponse.json(invites)));
+  server.use(
+    http.get(`${REST_URL}/invites`, ({ request }) =>
+      isPendingRequest(request) ? HttpResponse.json(invites) : undefined,
+    ),
+  );
   return {
     set: (next: PendingInvite[]) => {
       invites = next;
@@ -190,7 +209,8 @@ describe('MembersPage: pending invites', () => {
   it('shows a loading state, then an empty state', async () => {
     const gate = createGate();
     server.use(
-      http.get(`${REST_URL}/invites`, async () => {
+      http.get(`${REST_URL}/invites`, async ({ request }) => {
+        if (!isPendingRequest(request)) return undefined;
         await gate.opened;
         return HttpResponse.json([]);
       }),
@@ -212,6 +232,60 @@ describe('MembersPage: pending invites', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByRole('list')).toBeInTheDocument();
+  });
+});
+
+describe('MembersPage: the whole page', () => {
+  /** The real route tree, so OrgLayout supplies the role from a (changeable) membership list. */
+  function renderMembersRoute(initialRole: MyOrganization['role']) {
+    let myOrgs: MyOrganization[] = [{ ...testOrg, role: initialRole }];
+    server.use(
+      http.get(`${REST_URL}/organizations`, () =>
+        HttpResponse.json(myOrgs.map(({ role, ...org }) => ({ ...org, memberships: [{ role }] }))),
+      ),
+      memberHandlers.list(testMembers),
+      inviteHandlers.pending([]),
+    );
+    const view = renderRoutes(routes, {
+      route: `/orgs/${testOrg.id}/members`,
+      auth: 'signedIn',
+    });
+    return {
+      ...view,
+      setMyRole: (role: MyOrganization['role']) => {
+        myOrgs = [{ ...testOrg, role }];
+      },
+    };
+  }
+
+  it('shows inviting, the roster, pending invites, and recently accepted invites', async () => {
+    server.use(inviteHandlers.accepted([testAcceptedInvite]));
+    renderMembersRoute('owner');
+
+    expect(await screen.findByRole('heading', { name: 'Members (4)' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Invite someone' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pending invites' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recently accepted' })).toBeInTheDocument();
+    expect(await screen.findByText(/joined as a volunteer/)).toBeInTheDocument();
+  });
+
+  it('drops the owner controls after you step down', async () => {
+    const { user, setMyRole } = renderMembersRoute('owner');
+    server.use(
+      memberHandlers.updateOk(() => {
+        setMyRole('coordinator');
+      }),
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Manage your role' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Make coordinator' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'Step down to coordinator?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Step down' }));
+
+    expect(await screen.findByText("You're now a coordinator.")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Manage/ })).not.toBeInTheDocument();
+    // Coordinators can still see the page, but only invite volunteers.
+    expect(screen.getByText(/Ask an owner to invite another coordinator/)).toBeInTheDocument();
   });
 });
 

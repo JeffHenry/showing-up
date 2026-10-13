@@ -22,6 +22,23 @@ export async function fetchMyOrganizations(userId: string): Promise<MyOrganizati
   });
 }
 
+/**
+ * Removes the signed-in user's own membership. The database refuses for the last owner
+ * (LAST_OWNER); an empty result means nothing was removed, which is reported as not allowed.
+ */
+export async function leaveOrganization({ orgId, userId }: { orgId: string; userId: string }) {
+  const { data, error } = await supabase
+    .from('memberships')
+    .delete()
+    .eq('org_id', orgId)
+    .eq('user_id', userId)
+    .select('user_id');
+  if (error) throw error;
+  if (data.length === 0) {
+    throw Object.assign(new Error('No membership was removed.'), { code: '42501' });
+  }
+}
+
 /** Creates an organization owned by the signed-in user (see `create_organization` in the DB). */
 export async function createOrganization(input: CreateOrganizationInput) {
   const { data, error } = await supabase.rpc('create_organization', {

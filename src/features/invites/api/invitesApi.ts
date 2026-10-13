@@ -1,4 +1,5 @@
 import type {
+  AcceptedInvite,
   InvitePreview,
   InviteRole,
   InviteStatus,
@@ -51,6 +52,40 @@ export async function fetchPendingInvites(orgId: string): Promise<PendingInvite[
     const { role } = invite;
     return isInviteRole(role) ? [{ ...invite, role }] : [];
   });
+}
+
+/** How far back "Recently accepted" looks. */
+const ACCEPTED_WINDOW_DAYS = 30;
+
+/**
+ * Invites used in the last 30 days, newest first, with the names of who used and who sent them.
+ * A name is null when that person has left and no longer shares an organization with the viewer.
+ */
+export async function fetchAcceptedInvites(orgId: string): Promise<AcceptedInvite[]> {
+  const since = new Date(Date.now() - ACCEPTED_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const { data, error } = await supabase
+    .from('invites')
+    .select(
+      'id, role, used_at, used_by:profiles!invites_used_by_fkey(full_name), created_by:profiles!invites_created_by_fkey(full_name)',
+    )
+    .eq('org_id', orgId)
+    .not('used_at', 'is', null)
+    .gte('used_at', since.toISOString())
+    .order('used_at', { ascending: false });
+  if (error) throw error;
+  return data.flatMap(({ id, role, used_at: usedAt, used_by: usedBy, created_by: createdBy }) =>
+    isInviteRole(role) && usedAt
+      ? [
+          {
+            id,
+            role,
+            usedAt,
+            usedByName: usedBy?.full_name ?? null,
+            createdByName: createdBy?.full_name ?? null,
+          },
+        ]
+      : [],
+  );
 }
 
 /** Revoking deletes the invite, so its link stops working. */
