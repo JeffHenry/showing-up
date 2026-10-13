@@ -53,7 +53,7 @@ README is updated with every merged PR.
   - [x] Members page (create, copy, revoke links) and accept-invite page
 - [ ] **Members:** display names, member roster, role changes, leaving an organization
   - [x] Database: roster function with coordinator-only emails, self-leave rule, non-blank names
-  - [ ] Display names (sign-up step and account page)
+  - [x] Display names (one-time step after sign-in, account page)
   - [ ] Member roster, role changes, removal, leaving
 - [ ] **Shifts:** create/edit/delete for coordinators, list with cursor pagination
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
@@ -240,7 +240,8 @@ the API directly gets exactly the same answers as the UI. See
 - **Member emails stay with the people who need them.** Emails live in Supabase's private auth
   schema; `list_org_members()` returns them only to an organization's coordinators and owners.
   Volunteers see names, never other members' emails. Anyone can leave an organization, but the
-  last owner can't, so an organization is never left without one.
+  last owner can't, so an organization is never left without one. See
+  [ADR 0010](docs/adr/0010-members-and-display-names.md).
 
 **Planned**
 

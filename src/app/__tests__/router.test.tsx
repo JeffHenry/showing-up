@@ -66,18 +66,20 @@ describe('app routes', () => {
     });
   });
 
-  it.each([['/orgs/new'], ['/orgs/00000000-0000-0000-0000-0000000000b1']])(
-    'protects %s, keeping it as the place to return to after signing in',
-    async (path) => {
-      const { router } = renderRoutes(routes, { route: path, auth: 'signedOut' });
+  it.each([
+    ['/orgs/new'],
+    ['/orgs/00000000-0000-0000-0000-0000000000b1'],
+    ['/account'],
+    ['/welcome'],
+  ])('protects %s, keeping it as the place to return to after signing in', async (path) => {
+    const { router } = renderRoutes(routes, { route: path, auth: 'signedOut' });
 
-      expect(
-        await screen.findByRole('heading', { level: 1, name: 'Sign in to ShowingUp' }),
-      ).toBeInTheDocument();
-      expect(router.state.location.pathname).toBe('/login');
-      expect(new URLSearchParams(router.state.location.search).get('next')).toBe(path);
-    },
-  );
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Sign in to ShowingUp' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/login');
+    expect(new URLSearchParams(router.state.location.search).get('next')).toBe(path);
+  });
 
   it('sends a signed-out invitee to sign in, explaining why, and keeps the invite to return to', async () => {
     const { router } = renderRoutes(routes, { route: '/invite/abc123', auth: 'signedOut' });
