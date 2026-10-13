@@ -115,13 +115,48 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"shifts": {
+                  Row: {
+                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"capacity": number,"created_at": string,"created_by": string | null,"description": string | null,"end_time": string,"id": string,"location": string | null,"org_id": string,"start_time": string,"title": string,"updated_at": string,"version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"capacity": number,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"end_time": string,"id"?: string,"location"?: string | null,"org_id": string,"start_time": string,"title": string,"updated_at"?: string,"version"?: number
+                  }
+                  Update: {
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"capacity"?: number,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"end_time"?: string,"id"?: string,"location"?: string | null,"org_id"?: string,"start_time"?: string,"title"?: string,"updated_at"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "shifts_cancelled_by_fkey"
+      columns: ["cancelled_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "shifts_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "shifts_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            "create_invite":
+            "cancel_shift":
+{ Args: { "p_reason"?: string,"p_shift_id": string }; Returns: undefined
+                           },
+"create_invite":
 { Args: { "p_org_id": string,"p_role"?: Database["public"]['Enums']["membership_role"] }; Returns: {
               "expires_at": string,"invite_id": string,"token": string
             }[]

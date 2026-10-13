@@ -55,7 +55,10 @@ README is updated with every merged PR.
   - [x] Database: roster function with coordinator-only emails, self-leave rule, non-blank names
   - [x] Display names (one-time step after sign-in, account page)
   - [x] Member roster (search and role filter in the URL), role changes, removal, leaving, recently accepted invites
-- [ ] **Shifts:** create/edit/delete for coordinators, list with cursor pagination
+- [ ] **Shifts:** create/edit/cancel/delete for coordinators, list with cursor pagination
+  - [x] Database: scheduling rules, locking once started, cancelling, optimistic concurrency
+  - [ ] Shift list and detail, create form
+  - [ ] Edit, duplicate, cancel, delete, conflict warnings
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
 - [ ] **My Shifts** view
 - [ ] **Role-based navigation**
@@ -146,9 +149,9 @@ message, and refuses a secret key placed in a browser-exposed variable. See
 
 ### Data model
 
-`profiles`, `organizations`, `memberships`, and `invites` are live
-([migrations](supabase/migrations/)). Shifts, signups, and hours logs are planned and each arrive
-with their feature.
+`profiles`, `organizations`, `memberships`, `invites`, and `shifts` are live
+([migrations](supabase/migrations/)). Signups and hours logs are planned and each arrive with
+their feature.
 Organizations hold only what the app uses: a description, contact email, and website are optional,
 and nothing else (no tax IDs or phone numbers) is collected.
 
@@ -183,9 +186,13 @@ erDiagram
     enum role "owner | coordinator | volunteer"
   }
   shifts {
-    timestamptz start_time
-    timestamptz end_time
-    int capacity
+    text title
+    text location "optional"
+    timestamptz start_time "UTC, shown in the org's time zone"
+    timestamptz end_time "after start, at most 24 hours"
+    int capacity "1 to 500"
+    int version "bumped on every change"
+    timestamptz cancelled_at "cancelled shifts stay visible"
   }
   signups {
     text status "confirmed | cancelled | waitlisted"
@@ -210,7 +217,7 @@ Authorization lives in Postgres. The UI only hides controls a user can't use; a 
 the API directly gets exactly the same answers as the UI. See
 [ADR 0004](docs/adr/0004-database-authorization-model.md).
 
-**In place now** (tested by [102 pgTAP assertions](supabase/tests/database/))
+**In place now** (tested by [149 pgTAP assertions](supabase/tests/database/))
 
 - **Row-level security on every table**, with a test that fails if any future table ships
   without it.
@@ -250,6 +257,14 @@ the API directly gets exactly the same answers as the UI. See
   Volunteers see names, never other members' emails. Anyone can leave an organization, but the
   last owner can't, so an organization is never left without one. See
   [ADR 0010](docs/adr/0010-members-and-display-names.md).
+- **Shifts lock once they start.** A trigger refuses edits, cancelling, and deleting after a
+  shift's start time, so the record matches what happened. New or moved shifts must start in the
+  future and at most a year ahead (catching typos like 2062), end after they start, and last at
+  most 24 hours. Cancelling goes through `cancel_shift()`, which keeps the shift visible (with an
+  optional reason) instead of erasing it.
+- **No lost edits.** Every change to a shift bumps its `version`. The app saves an edit only if
+  the version still matches what it loaded, so when two coordinators edit the same shift, the
+  second one is told about the change instead of silently overwriting it.
 
 **Planned**
 
