@@ -1,14 +1,23 @@
 import { screen } from '@testing-library/react';
 import { axe } from 'jest-axe';
-import { delay, http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { useParams } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CreateOrgPage } from '@/features/orgs/components/CreateOrgPage';
 import { OrgsPage } from '@/features/orgs/components/OrgsPage';
 import { testOrg } from '@/test/fixtures/orgs';
+import { createGate } from '@/test/gate';
 import { orgHandlers, REST_URL } from '@/test/msw/orgs';
 import { server } from '@/test/msw/server';
 import { renderRoutes } from '@/test/render';
+
+// A short time zone list keeps these tests fast: the real list (~420 zones) makes every render and
+// the axe scan slow, and is covered by timezones.test.ts.
+vi.mock('@/lib/timezones', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/timezones')>()),
+  timeZoneOptions: () => ['America/Chicago', 'America/New_York', 'UTC'],
+  browserTimeZone: () => 'UTC',
+}));
 
 function OrgProbe() {
   const { orgId } = useParams();
@@ -32,6 +41,12 @@ async function fillRequired(user: User, name = 'Riverside Food Bank') {
   await user.selectOptions(screen.getByLabelText('Time zone'), 'America/Chicago');
 }
 
+/** Fills a field in one input event: faster than typing, for tests that aren't about keystrokes. */
+async function fill(user: User, label: string, text: string) {
+  await user.click(screen.getByLabelText(label));
+  await user.paste(text);
+}
+
 async function submit(user: User) {
   await user.click(screen.getByRole('button', { name: 'Create organization' }));
 }
@@ -42,18 +57,18 @@ describe('CreateOrgPage', () => {
     const name = screen.getByLabelText('Name');
     const slug = screen.getByLabelText('Short name');
 
-    await user.type(name, 'Café Société');
-    expect(slug).toHaveValue('cafe-societe');
+    await user.type(name, 'Café Oz');
+    expect(slug).toHaveValue('cafe-oz');
 
     await user.clear(slug);
-    await user.type(slug, 'my-cafe');
-    await user.type(name, ' Downtown');
-    expect(slug).toHaveValue('my-cafe');
+    await user.type(slug, 'mine');
+    await user.type(name, ' 2');
+    expect(slug).toHaveValue('mine');
 
     // Clearing the short name hands it back to the name.
     await user.clear(slug);
     await user.type(name, '!');
-    expect(slug).toHaveValue('cafe-societe-downtown');
+    expect(slug).toHaveValue('cafe-oz-2');
   });
 
   it('explains missing and invalid details next to each field', async () => {
@@ -61,6 +76,8 @@ describe('CreateOrgPage', () => {
 
     await submit(user);
 
+    // Validation runs asynchronously, so wait for the messages before checking where they point.
+    await screen.findByText('Enter a name for your organization.');
     expect(screen.getByLabelText('Name')).toHaveAccessibleDescription(
       'Enter a name for your organization.',
     );
@@ -68,10 +85,12 @@ describe('CreateOrgPage', () => {
       'A unique handle: lowercase letters, numbers, and hyphens. Use at least 3 characters.',
     );
 
-    await user.type(screen.getByLabelText('Short name'), 'bad--slug');
-    await user.type(screen.getByLabelText('Contact email'), 'not-an-email');
-    await user.type(screen.getByLabelText('Website'), 'javascript:alert(1)');
+    await fill(user, 'Short name', 'bad--slug');
+    await fill(user, 'Contact email', 'not-an-email');
+    await fill(user, 'Website', 'javascript:alert(1)');
     await submit(user);
+
+    await screen.findByText('Enter a full web address, like https://example.org.');
 
     expect(screen.getByLabelText('Short name')).toHaveAccessibleDescription(
       /Use only letters, numbers, and single hyphens/,
@@ -116,9 +135,9 @@ describe('CreateOrgPage', () => {
     const { user } = renderCreate();
 
     await fillRequired(user);
-    await user.type(screen.getByLabelText('Description'), 'Feeding families.');
-    await user.type(screen.getByLabelText('Contact email'), ' hello@riverside.example ');
-    await user.type(screen.getByLabelText('Website'), 'https://riverside.example');
+    await fill(user, 'Description', 'Feeding families.');
+    await fill(user, 'Contact email', ' hello@riverside.example ');
+    await fill(user, 'Website', 'https://riverside.example');
     expect(screen.getByLabelText('Description')).toHaveAccessibleDescription(
       '17 of 500 characters',
     );
@@ -187,9 +206,11 @@ describe('CreateOrgPage', () => {
   });
 
   it('disables the button while creating', async () => {
+    // Hold the response until the test has checked the pending state.
+    const gate = createGate();
     server.use(
       http.post(`${REST_URL}/rpc/create_organization`, async () => {
-        await delay(50);
+        await gate.opened;
         return HttpResponse.json({ id: testOrg.id });
       }),
     );
@@ -198,7 +219,8 @@ describe('CreateOrgPage', () => {
     await fillRequired(user);
     await submit(user);
 
-    expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Creating…' })).toBeDisabled();
+    gate.open();
     await screen.findByRole('heading', { name: `Dashboard for ${testOrg.id}` });
   });
 
@@ -210,18 +232,13 @@ describe('CreateOrgPage', () => {
     expect(await screen.findByRole('heading', { name: 'Organization list' })).toBeInTheDocument();
   });
 
-  // One scan with errors showing covers the plain form too. axe walks all ~400 time zone options,
-  // which is slow under coverage instrumentation, hence the longer timeout.
-  it(
-    'has no detectable accessibility violations with errors shown',
-    { timeout: 15_000 },
-    async () => {
-      const { container, user } = renderCreate();
+  it('has no detectable accessibility violations, including with errors shown', async () => {
+    const { container, user } = renderCreate();
 
-      await submit(user);
+    expect(await axe(container)).toHaveNoViolations();
 
-      expect(screen.getByLabelText('Name')).toHaveAttribute('aria-invalid', 'true');
-      expect(await axe(container)).toHaveNoViolations();
-    },
-  );
+    await submit(user);
+    expect(screen.getByLabelText('Name')).toHaveAttribute('aria-invalid', 'true');
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });
