@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { OrgContext } from '@/context/orgContext';
 import { useMyOrganizations } from '@/features/orgs/api/useMyOrganizations';
+import { OrgNav } from '@/features/orgs/components/OrgNav';
 import { OrgSwitcher } from '@/features/orgs/components/OrgSwitcher';
 import { APP_NAME } from '@/lib/constants';
 
@@ -27,8 +28,9 @@ export function OrgLayout() {
     return (
       <OrgContext value={{ org, role }}>
         <div className="space-y-6">
-          <div className="border-b pb-4">
+          <div className="space-y-4 border-b">
             <OrgSwitcher current={membership} orgs={orgs} />
+            <OrgNav />
           </div>
           <Outlet />
         </div>

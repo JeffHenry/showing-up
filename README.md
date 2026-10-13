@@ -59,6 +59,8 @@ README is updated with every merged PR.
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
 - [ ] **My Shifts** view
 - [ ] **Role-based navigation**
+  - [x] Organization navigation (Overview, and Members for coordinators and owners)
+  - [ ] Mobile bottom tab bar and large-screen sidebar, once shifts exist
 - [ ] **Seed data and demo accounts**
 
 </details>
@@ -118,6 +120,9 @@ flowchart LR
 - **Signed-in visitors skip the landing page:** `/` sends them to their only organization, or to
   their organization list. A synchronous check for a stored session shows a brief loading state
   to returning users instead of flashing the marketing page while sign-in is confirmed.
+- **Organization navigation:** every organization page has an Overview / Members bar (Members only
+  for coordinators and owners), with the current page marked for screen readers. Links to a page
+  section (`members#invite`) move focus to that section instead of the page's top.
 - **Two error layers:** a route-level error page (also catches failed chunk downloads after a
   deploy) and a feature-level `ErrorBoundary` whose "Try again" also refetches failed queries.
 - **Accessibility built into the shell:** a skip link, focus moved to the new page's content

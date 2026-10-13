@@ -23,7 +23,7 @@ export function OrgDashboardPage() {
           // Role-gated for UX only: the database decides who can invite.
           role === 'volunteer' ? undefined : (
             <Button asChild>
-              <Link to={`/orgs/${org.id}/members`}>
+              <Link to={`/orgs/${org.id}/members#invite`}>
                 <UserPlus aria-hidden="true" data-icon="inline-start" />
                 Invite people
               </Link>

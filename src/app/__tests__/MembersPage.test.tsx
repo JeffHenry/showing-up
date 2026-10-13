@@ -258,15 +258,30 @@ describe('MembersPage: the whole page', () => {
     };
   }
 
-  it('shows inviting, the roster, pending invites, and recently accepted invites', async () => {
+  it('lists members first, then inviting, pending invites, and recently accepted', async () => {
     server.use(inviteHandlers.accepted([testAcceptedInvite]));
     renderMembersRoute('owner');
 
-    expect(await screen.findByRole('heading', { name: 'Members (4)' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Invite someone' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Pending invites' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Recently accepted' })).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Members (4)' });
+    const sections = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+    expect(sections).toEqual([
+      'Members (4)',
+      'Invite people',
+      'Pending invites',
+      'Recently accepted',
+    ]);
     expect(await screen.findByText(/joined as a volunteer/)).toBeInTheDocument();
+  });
+
+  it('jumps to the invite section from the header button', async () => {
+    const { user } = renderMembersRoute('owner');
+
+    await screen.findByRole('heading', { name: 'Members (4)' });
+    await user.click(screen.getByRole('link', { name: 'Invite people' }));
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Invite people' })).toHaveFocus();
   });
 
   it('drops the owner controls after you step down', async () => {
