@@ -1,6 +1,6 @@
 import { APP_NAME, PRIVACY_EMAIL, REPO_URL } from '@/lib/constants';
 
-const LAST_UPDATED = 'October 12, 2026';
+const LAST_UPDATED = 'October 13, 2026';
 
 const heading = 'text-lg font-semibold tracking-tight';
 const link = 'underline underline-offset-4';
@@ -25,6 +25,7 @@ export function PrivacyPage() {
           <h2 className={heading}>What we collect</h2>
           <ul>
             <li>Your email address, so you can sign in.</li>
+            <li>The name you choose to be shown to people in your organizations.</li>
             <li>
               If you sign in with Google: your name and profile picture, provided by Google with
               your permission.
@@ -60,9 +61,10 @@ export function PrivacyPage() {
           <h2 className={heading}>Who can see your information</h2>
           <p>
             Other members of an organization you belong to can see your name and your activity in
-            that organization. An organization's optional contact details (description, contact
-            email, and website) are visible to its members. Access rules are enforced by the
-            database itself, not only by the app's screens.
+            that organization. Its coordinators and owners can also see your email address, so they
+            can reach you; other members can't. An organization's optional contact details
+            (description, contact email, and website) are visible to its members. Access rules are
+            enforced by the database itself, not only by the app's screens.
           </p>
         </section>
 

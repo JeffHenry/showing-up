@@ -39,6 +39,7 @@ describe('AccountControls', () => {
     );
 
     expect(screen.getByText(String(testUser.email))).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Account' })).toHaveAttribute('href', '/account');
     await user.click(screen.getByRole('button', { name: 'Sign out' }));
 
     expect(signOut).toHaveBeenCalledOnce();

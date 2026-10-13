@@ -53,57 +53,86 @@ export const routes: RouteObject[] = [
         Component: RequireAuth,
         children: [
           {
-            // Invite links sign people in first, then show what they're joining.
+            // Asks for a display name once, before anything that shows people to each other.
             Component: AuthLayout,
             children: [
               {
-                path: 'invite/:token',
+                path: 'welcome',
                 lazy: async () => ({
-                  Component: (await import('@/features/invites/components/AcceptInvitePage'))
-                    .AcceptInvitePage,
+                  Component: (await import('@/features/account/components/WelcomePage'))
+                    .WelcomePage,
                 }),
               },
             ],
           },
           {
-            path: 'orgs',
+            // Everything below needs a display name (lazy: it uses the Supabase client).
             lazy: async () => ({
-              Component: (await import('@/features/orgs/components/OrgsPage')).OrgsPage,
-            }),
-          },
-          {
-            // Ranked above `orgs/:orgId` because static segments win.
-            path: 'orgs/new',
-            lazy: async () => ({
-              Component: (await import('@/features/orgs/components/CreateOrgPage')).CreateOrgPage,
-            }),
-          },
-          {
-            // Lazy like the pages: it loads the Supabase client, which the initial bundle excludes.
-            path: 'orgs/:orgId',
-            lazy: async () => ({
-              Component: (await import('@/app/layouts/OrgLayout')).OrgLayout,
+              Component: (await import('@/features/account/components/RequireName')).RequireName,
             }),
             children: [
               {
-                index: true,
-                lazy: async () => ({
-                  Component: (await import('@/features/orgs/components/OrgDashboardPage'))
-                    .OrgDashboardPage,
-                }),
-              },
-              {
-                // UX guard only; RLS and the invite functions enforce the same roles.
-                element: <RequireRole roles={COORDINATOR_ROLES} />,
+                // Invite links sign people in first, then show what they're joining.
+                Component: AuthLayout,
                 children: [
                   {
-                    path: 'members',
+                    path: 'invite/:token',
                     lazy: async () => ({
-                      Component: (await import('@/features/invites/components/MembersPage'))
-                        .MembersPage,
+                      Component: (await import('@/features/invites/components/AcceptInvitePage'))
+                        .AcceptInvitePage,
                     }),
                   },
                 ],
+              },
+              {
+                path: 'orgs',
+                lazy: async () => ({
+                  Component: (await import('@/features/orgs/components/OrgsPage')).OrgsPage,
+                }),
+              },
+              {
+                // Ranked above `orgs/:orgId` because static segments win.
+                path: 'orgs/new',
+                lazy: async () => ({
+                  Component: (await import('@/features/orgs/components/CreateOrgPage'))
+                    .CreateOrgPage,
+                }),
+              },
+              {
+                // Lazy like the pages: it loads the Supabase client, which the initial bundle excludes.
+                path: 'orgs/:orgId',
+                lazy: async () => ({
+                  Component: (await import('@/app/layouts/OrgLayout')).OrgLayout,
+                }),
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (await import('@/features/orgs/components/OrgDashboardPage'))
+                        .OrgDashboardPage,
+                    }),
+                  },
+                  {
+                    // UX guard only; RLS and the invite functions enforce the same roles.
+                    element: <RequireRole roles={COORDINATOR_ROLES} />,
+                    children: [
+                      {
+                        path: 'members',
+                        lazy: async () => ({
+                          Component: (await import('@/features/invites/components/MembersPage'))
+                            .MembersPage,
+                        }),
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                path: 'account',
+                lazy: async () => ({
+                  Component: (await import('@/features/account/components/AccountPage'))
+                    .AccountPage,
+                }),
               },
             ],
           },

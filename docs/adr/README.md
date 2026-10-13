@@ -15,3 +15,4 @@ such rather than edited.
 | [0007](0007-authentication.md)                        | Authentication                                     | Accepted |
 | [0008](0008-organizations-in-the-app.md)              | Organizations in the app                           | Accepted |
 | [0009](0009-invites.md)                               | Invites                                            | Accepted |
+| [0010](0010-members-and-display-names.md)             | Members and display names                          | Accepted |
