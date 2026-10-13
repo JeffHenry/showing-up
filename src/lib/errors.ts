@@ -18,6 +18,10 @@ export type AppErrorCode =
   | 'INVITE_EXPIRED'
   | 'INVITE_USED'
   | 'INVITE_LIMIT_REACHED'
+  | 'SHIFT_IN_PAST'
+  | 'SHIFT_TOO_FAR'
+  | 'SHIFT_STARTED'
+  | 'SHIFT_CANCELLED'
   | 'NETWORK'
   | 'UNKNOWN';
 
@@ -45,6 +49,10 @@ const MESSAGES: Record<AppErrorCode, string> = {
     'This invite link has already been used. Each link works once, so ask for a new one.',
   INVITE_LIMIT_REACHED:
     'This organization already has 25 pending invites. Revoke some you no longer need first.',
+  SHIFT_IN_PAST: 'A shift has to start in the future. Check the date and start time.',
+  SHIFT_TOO_FAR: 'Shifts can be scheduled up to a year ahead. Check the date.',
+  SHIFT_STARTED: "This shift has already started, so it can't be changed.",
+  SHIFT_CANCELLED: "This shift was cancelled, so it can't be changed.",
   NETWORK: "We couldn't reach the server. Check your connection and try again.",
   UNKNOWN: 'Something went wrong. Please try again.',
 };
@@ -72,6 +80,10 @@ const DATABASE_ERROR_CODES: Partial<Record<string, AppErrorCode>> = {
   INVITE_EXPIRED: 'INVITE_EXPIRED',
   INVITE_USED: 'INVITE_USED',
   INVITE_LIMIT_REACHED: 'INVITE_LIMIT_REACHED',
+  SHIFT_IN_PAST: 'SHIFT_IN_PAST',
+  SHIFT_TOO_FAR: 'SHIFT_TOO_FAR',
+  SHIFT_STARTED: 'SHIFT_STARTED',
+  SHIFT_CANCELLED: 'SHIFT_CANCELLED',
 };
 
 /** The friendly error for a known code, e.g. to explain an expired invite the API reported. */

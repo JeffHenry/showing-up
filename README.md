@@ -57,7 +57,7 @@ README is updated with every merged PR.
   - [x] Member roster (search and role filter in the URL), role changes, removal, leaving, recently accepted invites
 - [ ] **Shifts:** create/edit/cancel/delete for coordinators, list with cursor pagination
   - [x] Database: scheduling rules, locking once started, cancelling, optimistic concurrency
-  - [ ] Shift list and detail, create form
+  - [x] Shift list (upcoming/past, grouped by day, Load more) and detail, create form
   - [ ] Edit, duplicate, cancel, delete, conflict warnings
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
 - [ ] **My Shifts** view
@@ -89,7 +89,7 @@ for what has landed so far.
 | Server state     | TanStack Query 5                          | Caching, optimistic updates with rollback, cursor pagination                          |
 | Forms            | React Hook Form + Zod 4                   | Typed, performant forms with one schema shared between validation and types           |
 | UI               | Tailwind CSS 4 + shadcn/ui (Radix)        | Accessible primitives whose source lives in the repo and can be audited               |
-| Dates            | date-fns 4 + @date-fns/tz                 | Timestamps stored in UTC and shown in each organization's time zone                   |
+| Dates            | @date-fns/tz + `Intl`                     | UTC in the database, entered and shown in each organization's zone; no locale data    |
 | Unit/integration | Vitest + React Testing Library + MSW 2    | Tests run through the same Vite pipeline as the app; network mocked at the HTTP layer |
 | Accessibility    | jest-axe + eslint-plugin-jsx-a11y         | Automated WCAG checks in both lint and tests                                          |
 | End-to-end       | Playwright                                | Critical user journeys tested against real preview deployments                        |
@@ -123,9 +123,20 @@ flowchart LR
 - **Signed-in visitors skip the landing page:** `/` sends them to their only organization, or to
   their organization list. A synchronous check for a stored session shows a brief loading state
   to returning users instead of flashing the marketing page while sign-in is confirmed.
-- **Organization navigation:** every organization page has an Overview / Members bar (Members only
-  for coordinators and owners), with the current page marked for screen readers. Links to a page
+- **Organization navigation:** every organization page has an Overview / Shifts / Members bar
+  (Members only for coordinators and owners), with the current page marked for screen readers. Links to a page
   section (`members#invite`) move focus to that section instead of the page's top.
+- **Shift times in the organization's time zone:** shifts are stored as UTC instants and always
+  shown and entered in the organization's zone, whatever the device's own, using `@date-fns/tz`
+  for the conversion and the browser's `Intl` for formatting (so only shift pages load it). The
+  form handles overnight shifts (an end time at or before the start time ends the next day) and
+  daylight saving: a time skipped when clocks spring forward gets an inline error, and a
+  wall-clock 24-hour shift stretched to 25 hours when clocks fall back is refused, as the
+  database would.
+- **Keyset pagination:** shift lists page on `(start_time, id)` (stable under inserts, unlike
+  offsets), fetching one extra row to know whether more exist. A **Load more** button, rather
+  than infinite scroll, keeps the footer reachable by keyboard and moves focus to the first new
+  shift.
 - **Two error layers:** a route-level error page (also catches failed chunk downloads after a
   deploy) and a feature-level `ErrorBoundary` whose "Try again" also refetches failed queries.
 - **Accessibility built into the shell:** a skip link, focus moved to the new page's content

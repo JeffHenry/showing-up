@@ -113,13 +113,35 @@ export const routes: RouteObject[] = [
                     }),
                   },
                   {
-                    // UX guard only; RLS and the invite functions enforce the same roles.
+                    path: 'shifts',
+                    lazy: async () => ({
+                      Component: (await import('@/features/shifts/components/ShiftsPage'))
+                        .ShiftsPage,
+                    }),
+                  },
+                  {
+                    path: 'shifts/:shiftId',
+                    lazy: async () => ({
+                      Component: (await import('@/features/shifts/components/ShiftDetailPage'))
+                        .ShiftDetailPage,
+                    }),
+                  },
+                  {
+                    // UX guard only; row-level security and the database functions enforce the same roles.
                     element: <RequireRole roles={COORDINATOR_ROLES} />,
                     children: [
                       {
                         path: 'members',
                         lazy: async () => ({
                           Component: (await import('@/app/routes/MembersPage')).MembersPage,
+                        }),
+                      },
+                      {
+                        // Ranked above `shifts/:shiftId` because static segments win.
+                        path: 'shifts/new',
+                        lazy: async () => ({
+                          Component: (await import('@/features/shifts/components/CreateShiftPage'))
+                            .CreateShiftPage,
                         }),
                       },
                     ],

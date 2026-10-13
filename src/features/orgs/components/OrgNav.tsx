@@ -11,7 +11,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   );
 
 /**
- * The organization's sections. Members appears for coordinators and owners only; this is a UX
+ * The organization's sections. Shifts stays current on a shift's own pages. Members appears for coordinators and owners only; this is a UX
  * choice, while `RequireRole` and row-level security are what actually protect the page and data.
  */
 export function OrgNav() {
@@ -22,6 +22,9 @@ export function OrgNav() {
     <nav aria-label="Organization" className="-mb-px flex gap-6">
       <NavLink to={base} end className={linkClass}>
         Overview
+      </NavLink>
+      <NavLink to={`${base}/shifts`} className={linkClass}>
+        Shifts
       </NavLink>
       {role !== 'volunteer' && (
         <NavLink to={`${base}/members`} className={linkClass}>
