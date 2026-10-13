@@ -12,4 +12,11 @@ export const queryKeys = {
     /** The signed-in user's organizations and their role in each. */
     mine: () => ['orgs', 'mine'] as const,
   },
+  invites: {
+    all: ['invites'] as const,
+    /** An organization's unused, unexpired invites (coordinators and owners only). */
+    pending: (orgId: string) => ['invites', orgId, 'pending'] as const,
+    /** What an invite link leads to, for the person who opened it. */
+    preview: (token: string) => ['invites', 'preview', token] as const,
+  },
 };

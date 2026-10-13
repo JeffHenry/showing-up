@@ -7,7 +7,8 @@ import { CreateOrgPage } from '@/features/orgs/components/CreateOrgPage';
 import { OrgsPage } from '@/features/orgs/components/OrgsPage';
 import { testOrg } from '@/test/fixtures/orgs';
 import { createGate } from '@/test/gate';
-import { orgHandlers, REST_URL } from '@/test/msw/orgs';
+import { orgHandlers } from '@/test/msw/orgs';
+import { REST_URL } from '@/test/msw/rest';
 import { server } from '@/test/msw/server';
 import { renderRoutes } from '@/test/render';
 

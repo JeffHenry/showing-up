@@ -79,6 +79,15 @@ describe('app routes', () => {
     },
   );
 
+  it('sends a signed-out invitee to sign in, explaining why, and keeps the invite to return to', async () => {
+    const { router } = renderRoutes(routes, { route: '/invite/abc123', auth: 'signedOut' });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Sign in to accept your invitation' }),
+    ).toBeInTheDocument();
+    expect(new URLSearchParams(router.state.location.search).get('next')).toBe('/invite/abc123');
+  });
+
   it('serves the create-organization form at /orgs/new, not as an organization ID', async () => {
     renderRoutes(routes, { route: '/orgs/new', auth: 'signedIn' });
 

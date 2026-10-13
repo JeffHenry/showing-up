@@ -1,5 +1,5 @@
 import type { MembershipRole } from '@/context/orgContext';
-import { ROLE_LABELS } from '@/features/orgs/roles';
+import { ROLE_LABELS } from '@/lib/roles';
 
 /** The user's role as text (never color alone). */
 export function RoleBadge({ role }: { role: MembershipRole }) {
