@@ -23,7 +23,7 @@ README is updated with every merged PR.
 | Phase                | Scope                                                                                              | Status         |
 | -------------------- | -------------------------------------------------------------------------------------------------- | -------------- |
 | **0. Foundation**    | Tooling, test harness, CI/CD, database, app shell                                                  | ✅ Complete    |
-| **P0. MVP**          | Auth, organizations, invites, shifts, claiming shifts, role-based navigation, demo data            | 🔄 In progress |
+| **P0. MVP**          | Auth, organizations, invites, members, shifts, claiming shifts, role-based navigation, demo data   | 🔄 In progress |
 | **P1. Full product** | Hours approval, week calendar, recurring shifts, reports & CSV export, email reminders, monitoring | ⏳ Planned     |
 | **P2. Stretch**      | Waitlists, skills matching, realtime spot counts, offline PWA, dark mode                           | ⏳ Planned     |
 
@@ -51,6 +51,10 @@ README is updated with every merged PR.
 - [x] **Invites:** generate link, redeem via RPC
   - [x] Database: hashed single-use tokens, role tiers, row-locked redemption
   - [x] Members page (create, copy, revoke links) and accept-invite page
+- [ ] **Members:** display names, member roster, role changes, leaving an organization
+  - [x] Database: roster function with coordinator-only emails, self-leave rule, non-blank names
+  - [ ] Display names (sign-up step and account page)
+  - [ ] Member roster, role changes, removal, leaving
 - [ ] **Shifts:** create/edit/delete for coordinators, list with cursor pagination
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
 - [ ] **My Shifts** view
@@ -198,7 +202,7 @@ Authorization lives in Postgres. The UI only hides controls a user can't use; a 
 the API directly gets exactly the same answers as the UI. See
 [ADR 0004](docs/adr/0004-database-authorization-model.md).
 
-**In place now** (tested by [83 pgTAP assertions](supabase/tests/database/))
+**In place now** (tested by [102 pgTAP assertions](supabase/tests/database/))
 
 - **Row-level security on every table**, with a test that fails if any future table ships
   without it.
@@ -233,6 +237,10 @@ the API directly gets exactly the same answers as the UI. See
   coordinators and volunteers, coordinators only volunteers, and nobody can be invited as an
   owner. Signed-out users still can't call any database function: invitees sign in first. See
   [ADR 0009](docs/adr/0009-invites.md).
+- **Member emails stay with the people who need them.** Emails live in Supabase's private auth
+  schema; `list_org_members()` returns them only to an organization's coordinators and owners.
+  Volunteers see names, never other members' emails. Anyone can leave an organization, but the
+  last owner can't, so an organization is never left without one.
 
 **Planned**
 

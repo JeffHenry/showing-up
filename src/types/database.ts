@@ -149,6 +149,11 @@ isOneToOne: false
               "org_id": string,"org_name": string,"role": Database["public"]['Enums']["membership_role"],"status": string
             }[]
                            },
+"list_org_members":
+{ Args: { "p_org_id": string }; Returns: {
+              "email": string,"full_name": string,"joined_at": string,"role": Database["public"]['Enums']["membership_role"],"user_id": string
+            }[]
+                           },
 "redeem_invite":
 { Args: { "p_token": string }; Returns: string
                            }
