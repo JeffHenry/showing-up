@@ -144,6 +144,13 @@ export const routes: RouteObject[] = [
                             .CreateShiftPage,
                         }),
                       },
+                      {
+                        path: 'shifts/:shiftId/edit',
+                        lazy: async () => ({
+                          Component: (await import('@/features/shifts/components/EditShiftPage'))
+                            .EditShiftPage,
+                        }),
+                      },
                     ],
                   },
                 ],

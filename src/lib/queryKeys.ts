@@ -1,3 +1,12 @@
+/** What an overlap check compares against (see `fetchOverlappingShifts`). */
+export interface OverlapWindow {
+  start: string;
+  end: string;
+  location: string | null;
+  title: string;
+  excludeShiftId: string | null;
+}
+
 /**
  * Query key factory: every TanStack Query key in the app comes from here, so invalidation and
  * cache reads can't drift from the keys used to fetch.
@@ -32,11 +41,14 @@ export const queryKeys = {
   },
   shifts: {
     all: ['shifts'] as const,
-    /** Prefix for every list of an organization's shifts; invalidate it after any change. */
-    lists: (orgId: string) => ['shifts', orgId, 'list'] as const,
+    /** Prefix for an organization's lists and overlap checks; invalidate it after any change. */
+    forOrg: (orgId: string) => ['shifts', orgId] as const,
     /** One page-by-page list: upcoming (including in progress) or past shifts. */
     list: (orgId: string, filters: { when: 'upcoming' | 'past' }) =>
       ['shifts', orgId, 'list', filters] as const,
     detail: (shiftId: string) => ['shifts', 'detail', shiftId] as const,
+    /** Shifts that overlap a time, at the same location (or with the same title, without one). */
+    overlaps: (orgId: string, window: OverlapWindow) =>
+      ['shifts', orgId, 'overlaps', window] as const,
   },
 };

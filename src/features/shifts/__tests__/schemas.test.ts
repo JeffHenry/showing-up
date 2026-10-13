@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   createShiftFormSchema,
   EMPTY_SHIFT_FORM,
+  shiftToFormValues,
   type ShiftFormValues,
 } from '@/features/shifts/schemas';
+import { overnightShift, testShift } from '@/test/fixtures/shifts';
 import { wallTimeAt, zonedInstant } from '@/lib/zonedTime';
 
 const CHICAGO = 'America/Chicago';
@@ -90,6 +92,30 @@ describe('createShiftFormSchema', () => {
     });
     expect(messages(form({ date: soon(400) }))).toEqual({
       date: 'Shifts can be scheduled up to a year ahead.',
+    });
+  });
+});
+
+describe('shiftToFormValues', () => {
+  it('shows a saved shift in the organization’s time zone, for editing or copying', () => {
+    expect(shiftToFormValues(testShift, CHICAGO)).toEqual({
+      title: 'Morning sorting',
+      date: '2099-10-24',
+      startTime: '09:00',
+      endTime: '12:00',
+      location: 'Main warehouse',
+      capacity: '6',
+      description: testShift.description,
+    });
+  });
+
+  it('gives an overnight shift its start date and empty optional fields', () => {
+    expect(shiftToFormValues({ ...overnightShift, location: null }, CHICAGO)).toMatchObject({
+      date: '2099-10-25',
+      startTime: '22:00',
+      endTime: '06:00',
+      location: '',
+      description: '',
     });
   });
 });

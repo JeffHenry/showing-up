@@ -1,22 +1,22 @@
-import { ArrowLeft, Ban, SearchX } from 'lucide-react';
+import { ArrowLeft, Ban } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
-import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorFallback } from '@/components/common/ErrorFallback';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrg } from '@/context/useOrg';
 import { useShift } from '@/features/shifts/api/useShiftQueries';
+import { ShiftActions } from '@/features/shifts/components/ShiftActions';
+import { ShiftNotFound } from '@/features/shifts/components/ShiftNotFound';
 import { ShiftStatusBadge } from '@/features/shifts/components/ShiftStatusBadge';
 import { shiftStatus, volunteersNeeded } from '@/features/shifts/display';
-import { isShiftCreated } from '@/features/shifts/navigationState';
+import { SHIFT_NOTICES, shiftNotice } from '@/features/shifts/navigationState';
 import { APP_NAME } from '@/lib/constants';
 import { formatDayHeading, formatTimeRange, timeZoneAbbreviation } from '@/lib/dates';
 
 /** One shift: when and where it is, how many volunteers it needs, and any details. */
 export function ShiftDetailPage() {
-  const { org } = useOrg();
+  const { org, role } = useOrg();
   const { shiftId = '' } = useParams();
   const location = useLocation();
   const { data: shift, isPending, isError, refetch } = useShift(shiftId);
@@ -55,25 +55,10 @@ export function ShiftDetailPage() {
     );
   }
 
-  // The same answer for a deleted shift and another organization's, so it reveals nothing.
-  if (shift?.org_id !== org.id) {
-    return (
-      <div className="space-y-6">
-        <title>{`Shift not found · ${APP_NAME}`}</title>
-        <PageHeader title="Shift not found" />
-        <EmptyState
-          icon={SearchX}
-          title="We couldn't find that shift"
-          description="It may have been deleted, or the link may be wrong."
-          action={
-            <Button asChild>
-              <Link to={listPath}>All shifts</Link>
-            </Button>
-          }
-        />
-      </div>
-    );
-  }
+  if (shift?.org_id !== org.id) return <ShiftNotFound orgId={org.id} />;
+
+  const status = shiftStatus(shift, now);
+  const notice = shiftNotice(location.state);
 
   const when = `${formatDayHeading(shift.start_time, org.timezone, now)}, ${formatTimeRange(
     shift.start_time,
@@ -85,13 +70,13 @@ export function ShiftDetailPage() {
     <div className="max-w-3xl space-y-6">
       <title>{`${shift.title} · ${org.name} · ${APP_NAME}`}</title>
       {backLink}
-      {isShiftCreated(location.state) && (
+      {notice && (
         <p role="status" className="text-sm font-medium">
-          Shift created.
+          {SHIFT_NOTICES[notice]}
         </p>
       )}
       <PageHeader title={shift.title} />
-      <ShiftStatusBadge status={shiftStatus(shift, now)} />
+      <ShiftStatusBadge status={status} />
       {shift.cancelled_at && (
         <div className="space-y-1 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
           <p className="flex items-center gap-2 font-medium">
@@ -122,6 +107,8 @@ export function ShiftDetailPage() {
           <p className="whitespace-pre-line">{shift.description}</p>
         </section>
       )}
+      {/* UX only: row-level security and the shifts trigger decide what may change. */}
+      {role !== 'volunteer' && <ShiftActions shift={shift} status={status} />}
     </div>
   );
 }

@@ -55,10 +55,10 @@ README is updated with every merged PR.
   - [x] Database: roster function with coordinator-only emails, self-leave rule, non-blank names
   - [x] Display names (one-time step after sign-in, account page)
   - [x] Member roster (search and role filter in the URL), role changes, removal, leaving, recently accepted invites
-- [ ] **Shifts:** create/edit/cancel/delete for coordinators, list with cursor pagination
+- [x] **Shifts:** create/edit/cancel/delete for coordinators, list with cursor pagination
   - [x] Database: scheduling rules, locking once started, cancelling, optimistic concurrency
   - [x] Shift list (upcoming/past, grouped by day, Load more) and detail, create form
-  - [ ] Edit, duplicate, cancel, delete, conflict warnings
+  - [x] Edit, duplicate, cancel, delete, conflict and overlap warnings
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
 - [ ] **My Shifts** view
 - [ ] **Role-based navigation**
@@ -137,6 +137,11 @@ flowchart LR
   offsets), fetching one extra row to know whether more exist. A **Load more** button, rather
   than infinite scroll, keeps the footer reachable by keyboard and moves focus to the first new
   shift.
+- **Conflicts surfaced while editing:** the shift form warns, without blocking, when the time
+  overlaps another shift at the same location (or with the same title, without one), which
+  catches accidental duplicates while allowing parallel crews. Edits that lose a race show
+  "Someone else changed this shift" with a one-click reload. Cancelling, deleting, and other
+  risky actions use an accessible confirmation dialog that returns focus sensibly afterwards.
 - **Two error layers:** a route-level error page (also catches failed chunk downloads after a
   deploy) and a feature-level `ErrorBoundary` whose "Try again" also refetches failed queries.
 - **Accessibility built into the shell:** a skip link, focus moved to the new page's content
@@ -275,7 +280,8 @@ the API directly gets exactly the same answers as the UI. See
   optional reason) instead of erasing it.
 - **No lost edits.** Every change to a shift bumps its `version`. The app saves an edit only if
   the version still matches what it loaded, so when two coordinators edit the same shift, the
-  second one is told about the change instead of silently overwriting it.
+  second one is told about the change instead of silently overwriting it, and can load the
+  latest version. See [ADR 0011](docs/adr/0011-shifts.md).
 
 **Planned**
 
