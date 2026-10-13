@@ -26,7 +26,7 @@ describe('organization pages', () => {
     expect(screen.getByText('Your role: Owner')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Invite people' })).toHaveAttribute(
       'href',
-      `/orgs/${testOrg.id}/members`,
+      `/orgs/${testOrg.id}/members#invite`,
     );
     expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument();
     expect(screen.getByText('Feeding families since 1998.')).toBeInTheDocument();
@@ -119,19 +119,45 @@ describe('organization pages', () => {
       await screen.findByRole('heading', { level: 1, name: 'Eastside Pantry' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Your role: Volunteer')).toBeInTheDocument();
-    // Volunteers can't invite, so the dashboard doesn't offer it.
+    // Volunteers can't invite or see the roster, so neither is offered.
     expect(screen.queryByRole('link', { name: 'Invite people' })).not.toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: 'Organization' });
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Overview']);
     // Eastside Pantry has no optional details, so there's no About card.
     expect(screen.queryByRole('heading', { name: 'About' })).not.toBeInTheDocument();
   });
 
-  it('opens the Members page for owners and coordinators', async () => {
+  it('offers Overview and Members in the organization navigation', async () => {
+    server.use(orgHandlers.list([testOrg]), inviteHandlers.pending([]));
+    const { user } = renderOrg();
+
+    const nav = await screen.findByRole('navigation', { name: 'Organization' });
+    expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+
+    await user.click(within(nav).getByRole('link', { name: 'Members' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Members' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Members' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(nav).getByRole('link', { name: 'Overview' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('takes "Invite people" on the dashboard straight to the invite section', async () => {
     server.use(orgHandlers.list([testOrg]), inviteHandlers.pending([]));
     const { user } = renderOrg();
 
     await user.click(await screen.findByRole('link', { name: 'Invite people' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Members' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Invite people' })).toHaveFocus();
   });
 
   it('keeps volunteers out of the Members page', async () => {
