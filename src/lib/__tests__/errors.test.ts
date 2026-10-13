@@ -4,7 +4,7 @@ import {
   AuthRetryableFetchError,
 } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
-import { fromAuthErrorCode, toAppError } from '@/lib/errors';
+import { AppException, fromAuthErrorCode, toAppError } from '@/lib/errors';
 
 describe('toAppError', () => {
   it.each([
@@ -62,6 +62,7 @@ describe('toAppError', () => {
     ['a shift over a year ahead', { code: 'P0001', message: 'SHIFT_TOO_FAR' }, 'SHIFT_TOO_FAR'],
     ['a shift that has started', { code: 'P0001', message: 'SHIFT_STARTED' }, 'SHIFT_STARTED'],
     ['a cancelled shift', { code: 'P0001', message: 'SHIFT_CANCELLED' }, 'SHIFT_CANCELLED'],
+    ['a conflict the app detected', new AppException('SHIFT_CHANGED'), 'SHIFT_CHANGED'],
     ['an unrecognized database error', { code: 'P0001', message: 'SOMETHING_NEW' }, 'UNKNOWN'],
     ['a rejected value', { code: '23514', message: 'violates check constraint' }, 'INVALID_INPUT'],
     ['an unexpected auth error', new AuthApiError('boom', 400, 'something_new'), 'UNKNOWN'],

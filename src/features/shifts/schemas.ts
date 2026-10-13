@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { resolveShiftTimes } from '@/features/shifts/shiftTimes';
-import type { ShiftInput } from '@/features/shifts/types';
+import type { ShiftDetail, ShiftInput } from '@/features/shifts/types';
+import { wallTimeAt } from '@/lib/zonedTime';
 
 // Limits match the database's CHECK constraints (see the shifts migration).
 export const TITLE_MAX_LENGTH = 100;
@@ -59,6 +60,20 @@ export const EMPTY_SHIFT_FORM: ShiftFormValues = {
   capacity: '',
   description: '',
 };
+
+/** A saved shift as form values, in the organization's time zone (to edit or duplicate it). */
+export function shiftToFormValues(shift: ShiftDetail, timeZone: string): ShiftFormValues {
+  const start = wallTimeAt(shift.start_time, timeZone);
+  return {
+    title: shift.title,
+    date: start.date,
+    startTime: start.time,
+    endTime: wallTimeAt(shift.end_time, timeZone).time,
+    location: shift.location ?? '',
+    capacity: String(shift.capacity),
+    description: shift.description ?? '',
+  };
+}
 
 /**
  * The shift form's rules. Dates and times are entered in the organization's time zone and come

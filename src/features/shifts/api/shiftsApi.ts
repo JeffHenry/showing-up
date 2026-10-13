@@ -3,8 +3,11 @@ import type {
   ShiftDetail,
   ShiftInput,
   ShiftPage,
+  ShiftSummary,
   ShiftWhen,
 } from '@/features/shifts/types';
+import { AppException } from '@/lib/errors';
+import type { OverlapWindow } from '@/lib/queryKeys';
 import { supabase } from '@/lib/supabase';
 
 export const SHIFTS_PAGE_SIZE = 20;
@@ -69,6 +72,18 @@ export async function fetchShift(shiftId: string): Promise<ShiftDetail | null> {
   return data;
 }
 
+/** The columns a shift's details are saved to. */
+function toRow(input: ShiftInput) {
+  return {
+    title: input.title,
+    location: input.location,
+    description: input.description,
+    start_time: input.startTime,
+    end_time: input.endTime,
+    capacity: input.capacity,
+  };
+}
+
 /** Coordinators and owners only (row-level security); returns the new shift's id. */
 export async function createShift({
   orgId,
@@ -79,17 +94,97 @@ export async function createShift({
 }): Promise<string> {
   const { data, error } = await supabase
     .from('shifts')
-    .insert({
-      org_id: orgId,
-      title: input.title,
-      location: input.location,
-      description: input.description,
-      start_time: input.startTime,
-      end_time: input.endTime,
-      capacity: input.capacity,
-    })
+    .insert({ org_id: orgId, ...toRow(input) })
     .select('id')
     .single();
   if (error) throw error;
   return data.id;
+}
+
+/**
+ * Saves an edit only if the shift is still at `version`, the one the editor loaded (optimistic
+ * concurrency), so one coordinator never silently overwrites another's changes. The database
+ * raises its own errors for started and cancelled shifts; when nothing was saved, the shift is
+ * read again to say why.
+ */
+export async function updateShift({
+  shiftId,
+  version,
+  input,
+}: {
+  shiftId: string;
+  version: number;
+  input: ShiftInput;
+}): Promise<void> {
+  const { data, error } = await supabase
+    .from('shifts')
+    .update(toRow(input))
+    .eq('id', shiftId)
+    .eq('version', version)
+    .select('id');
+  if (error) throw error;
+  if (data.length > 0) return;
+
+  const current = await fetchShift(shiftId);
+  if (!current) throw new AppException('SHIFT_NOT_FOUND');
+  if (current.version !== version) throw new AppException('SHIFT_CHANGED');
+  // Still there and unchanged, yet not saved: row-level security filtered it out.
+  throw new AppException('NOT_AUTHORIZED');
+}
+
+/** Cancels a shift that hasn't started; it stays visible, marked cancelled (see `cancel_shift`). */
+export async function cancelShift({
+  shiftId,
+  reason,
+}: {
+  shiftId: string;
+  reason: string;
+}): Promise<void> {
+  const { error } = await supabase.rpc('cancel_shift', {
+    p_shift_id: shiftId,
+    // A blank reason is left out (stored as none).
+    p_reason: reason.trim() || undefined,
+  });
+  if (error) throw error;
+}
+
+/** Deletes a shift that hasn't started. Row-level security filters out anyone else's attempt. */
+export async function deleteShift(shiftId: string): Promise<void> {
+  const { data, error } = await supabase.from('shifts').delete().eq('id', shiftId).select('id');
+  if (error) throw error;
+  if (data.length === 0) throw new AppException('NOT_AUTHORIZED');
+}
+
+/**
+ * Escapes LIKE wildcards, so a location such as "Room 100%" matches only itself. (PostgREST also
+ * reads `*` as a wildcard; at worst that widens a warning, never a write.)
+ */
+function likeLiteral(value: string): string {
+  return value.replace(/[\\%_]/g, (character) => `\\${character}`);
+}
+
+/**
+ * Up to three active shifts that overlap `window`: at the same location (ignoring case) or,
+ * when there's no location, with the same title. The form shows them as a warning; parallel
+ * crews are normal, so overlapping is allowed.
+ */
+export async function fetchOverlappingShifts(
+  orgId: string,
+  window: OverlapWindow,
+): Promise<ShiftSummary[]> {
+  let query = supabase
+    .from('shifts')
+    .select(SUMMARY_COLUMNS)
+    .eq('org_id', orgId)
+    .is('cancelled_at', null)
+    .lt('start_time', window.end)
+    .gt('end_time', window.start);
+  query = window.location
+    ? query.ilike('location', likeLiteral(window.location))
+    : query.ilike('title', likeLiteral(window.title));
+  if (window.excludeShiftId) query = query.neq('id', window.excludeShiftId);
+
+  const { data, error } = await query.order('start_time').limit(3);
+  if (error) throw error;
+  return data;
 }

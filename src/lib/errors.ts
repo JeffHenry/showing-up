@@ -22,6 +22,8 @@ export type AppErrorCode =
   | 'SHIFT_TOO_FAR'
   | 'SHIFT_STARTED'
   | 'SHIFT_CANCELLED'
+  | 'SHIFT_CHANGED'
+  | 'SHIFT_NOT_FOUND'
   | 'NETWORK'
   | 'UNKNOWN';
 
@@ -53,6 +55,9 @@ const MESSAGES: Record<AppErrorCode, string> = {
   SHIFT_TOO_FAR: 'Shifts can be scheduled up to a year ahead. Check the date.',
   SHIFT_STARTED: "This shift has already started, so it can't be changed.",
   SHIFT_CANCELLED: "This shift was cancelled, so it can't be changed.",
+  SHIFT_CHANGED:
+    'Someone else changed this shift while you were editing. Load the latest version, then make your changes again.',
+  SHIFT_NOT_FOUND: 'This shift no longer exists. It may have been deleted.',
   NETWORK: "We couldn't reach the server. Check your connection and try again.",
   UNKNOWN: 'Something went wrong. Please try again.',
 };
@@ -91,6 +96,20 @@ export function appError(code: AppErrorCode): AppError {
   return { code, message: MESSAGES[code] };
 }
 
+/**
+ * A known situation the app detects itself rather than the server reporting it, e.g. an edit
+ * that changed no rows because someone else saved first. `toAppError` returns its code.
+ */
+export class AppException extends Error {
+  readonly code: AppErrorCode;
+
+  constructor(code: AppErrorCode) {
+    super(MESSAGES[code]);
+    this.name = 'AppException';
+    this.code = code;
+  }
+}
+
 /** Maps a Supabase Auth error code (e.g. from a redirect's `error_code` param) to an app error. */
 export function fromAuthErrorCode(code: string | null | undefined): AppError {
   const mapped = code ? AUTH_ERROR_CODES[code] : undefined;
@@ -105,6 +124,7 @@ function hasStringCode(error: unknown): error is { code: string; message?: unkno
 
 /** Converts anything thrown by Supabase or `fetch` into a typed error with a friendly message. */
 export function toAppError(error: unknown): AppError {
+  if (error instanceof AppException) return appError(error.code);
   if (isAuthRetryableFetchError(error)) return appError('NETWORK');
   if (isAuthPKCECodeVerifierMissingError(error)) return appError('SIGN_IN_INTERRUPTED');
   if (isAuthError(error)) {

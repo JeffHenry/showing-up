@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, type ReactNode } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Link } from 'react-router';
 import { FormField } from '@/components/common/FormField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { OverlapWarning } from '@/features/shifts/components/OverlapWarning';
 import { ShiftTimeFields } from '@/features/shifts/components/ShiftTimeFields';
 import {
   CAPACITY_MAX,
@@ -17,7 +19,10 @@ import type { ShiftInput } from '@/features/shifts/types';
 import type { AppError } from '@/lib/errors';
 
 interface ShiftFormProps {
+  orgId: string;
   timeZone: string;
+  /** The shift being edited, left out of the overlap check; null for a new shift. */
+  shiftId?: string | null;
   /** Prefilled values (editing or duplicating); empty for a new shift. */
   defaultValues?: ShiftFormValues;
   submitLabel: string;
@@ -28,12 +33,18 @@ interface ShiftFormProps {
   /** Keeps the button disabled after saving, while the page moves on. */
   isDone: boolean;
   requestError: AppError | null;
+  /** Shown with the request error, e.g. a way to load the latest version after a conflict. */
+  errorAction?: ReactNode;
+  /** Moves focus to the first field on mount, e.g. after reloading a newer version. */
+  focusFirstField?: boolean;
   onSubmit: (input: ShiftInput) => void;
 }
 
 /** Creates or edits a shift. Validation mirrors the database's rules, which still have the final say. */
 export function ShiftForm({
+  orgId,
   timeZone,
+  shiftId = null,
   defaultValues = EMPTY_SHIFT_FORM,
   submitLabel,
   pendingLabel,
@@ -41,18 +52,25 @@ export function ShiftForm({
   isPending,
   isDone,
   requestError,
+  errorAction,
+  focusFirstField = false,
   onSubmit,
 }: ShiftFormProps) {
   const {
     register,
     handleSubmit,
     control,
+    setFocus,
     formState: { errors },
   } = useForm<ShiftFormValues, unknown, ShiftInput>({
     resolver: zodResolver(createShiftFormSchema(timeZone)),
     defaultValues,
   });
   const description = useWatch({ control, name: 'description' });
+
+  useEffect(() => {
+    if (focusFirstField) setFocus('title');
+  }, [focusFirstField, setFocus]);
 
   return (
     <form
@@ -74,6 +92,12 @@ export function ShiftForm({
       >
         {(field) => <Input {...field} autoComplete="off" {...register('location')} />}
       </FormField>
+      <OverlapWarning
+        orgId={orgId}
+        timeZone={timeZone}
+        control={control}
+        excludeShiftId={shiftId}
+      />
       <FormField id="shift-capacity" label="Volunteers needed" error={errors.capacity?.message}>
         {(field) => (
           <Input
@@ -97,9 +121,10 @@ export function ShiftForm({
       </FormField>
 
       {requestError && (
-        <p role="alert" className="text-sm text-destructive">
-          {requestError.message}
-        </p>
+        <div role="alert" className="space-y-3">
+          <p className="text-sm text-destructive">{requestError.message}</p>
+          {errorAction}
+        </div>
       )}
       <div className="flex flex-wrap gap-3">
         <Button type="submit" disabled={isPending || isDone}>

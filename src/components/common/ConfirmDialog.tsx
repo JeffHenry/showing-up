@@ -18,6 +18,10 @@ interface ConfirmDialogProps {
   description: ReactNode;
   confirmLabel: string;
   pendingLabel: string;
+  /** The button that closes without changing anything; "Cancel" unless that's ambiguous. */
+  dismissLabel?: string;
+  /** Extra inputs between the description and the buttons, e.g. an optional reason. */
+  children?: ReactNode;
   onConfirm: () => void;
   pending?: boolean;
   /** Shown inside the dialog, e.g. why the change was refused. */
@@ -38,6 +42,8 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   pendingLabel,
+  dismissLabel = 'Cancel',
+  children,
   onConfirm,
   pending = false,
   error,
@@ -65,13 +71,14 @@ export function ConfirmDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {children}
         {error && (
           <p role="alert" className="text-sm text-destructive">
             {error}
           </p>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{dismissLabel}</AlertDialogCancel>
           <Button
             type="button"
             variant={destructive ? 'destructive' : 'default'}

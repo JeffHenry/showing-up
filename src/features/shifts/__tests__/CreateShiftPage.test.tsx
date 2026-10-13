@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { routes } from '@/app/router';
 import { testOrg } from '@/test/fixtures/orgs';
-import { testShift } from '@/test/fixtures/shifts';
+import { afternoonShift, summaryOf, testShift } from '@/test/fixtures/shifts';
 import { createGate } from '@/test/gate';
 import { orgHandlers } from '@/test/msw/orgs';
 import { REST_URL } from '@/test/msw/rest';
@@ -18,9 +18,12 @@ const CHICAGO = testOrg.timezone;
 /** A date a few days ahead in the organization's zone, so it's always in the future. */
 const date = wallTimeAt(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), CHICAGO).date;
 
-function renderCreate(role: 'owner' | 'volunteer' = 'owner') {
+function renderCreate(role: 'owner' | 'volunteer' = 'owner', search = '') {
   server.use(orgHandlers.list([{ ...testOrg, role }]));
-  return renderRoutes(routes, { route: `/orgs/${testOrg.id}/shifts/new`, auth: 'signedIn' });
+  return renderRoutes(routes, {
+    route: `/orgs/${testOrg.id}/shifts/new${search}`,
+    auth: 'signedIn',
+  });
 }
 
 type User = ReturnType<typeof renderCreate>['user'];
@@ -161,5 +164,98 @@ describe('CreateShiftPage', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'New shift' });
     expect(await axe(container)).toHaveNoViolations();
+  });
+  describe('duplicating', () => {
+    it('starts from a copy of the shift', async () => {
+      server.use(shiftHandlers.detail(testShift));
+      renderCreate('owner', `?from=${testShift.id}`);
+
+      expect(
+        await screen.findByText(
+          'A copy of “Morning sorting”. Change the date and anything else that’s different.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Title')).toHaveValue('Morning sorting');
+      expect(screen.getByLabelText('Date')).toHaveValue('2099-10-24');
+      expect(screen.getByLabelText('Start time')).toHaveValue('09:00');
+      expect(screen.getByLabelText('Location (optional)')).toHaveValue('Main warehouse');
+      expect(screen.getByLabelText('Volunteers needed')).toHaveValue(6);
+      expect(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute(
+        'href',
+        `/orgs/${testOrg.id}/shifts/${testShift.id}`,
+      );
+    });
+
+    it('starts empty when the shift to copy can’t be found', async () => {
+      server.use(shiftHandlers.detail(null));
+      renderCreate('owner', `?from=${testShift.id}`);
+
+      expect(
+        await screen.findByText('We couldn’t find the shift to copy, so the form starts empty.'),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Title')).toHaveValue('');
+    });
+  });
+
+  describe('overlap warning', () => {
+    it('warns about a shift at the same location and time, but still saves', async () => {
+      const requests: URLSearchParams[] = [];
+      server.use(
+        shiftHandlers.overlaps([summaryOf(afternoonShift)], (params) => requests.push(params)),
+        shiftHandlers.createOk(testShift.id),
+        shiftHandlers.detail(testShift),
+      );
+      const { user } = renderCreate();
+
+      await screen.findByRole('heading', { level: 1, name: 'New shift' });
+      await fillShift(user);
+      await fill(user, 'Location (optional)', 'Main warehouse');
+
+      expect(
+        await screen.findByText('This overlaps another shift at Main warehouse:'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/^Afternoon packing, Sat, Oct 24, 2:00 PM – 5:00 PM$/),
+      ).toBeInTheDocument();
+      expect(requests.at(-1)?.get('location')).toBe('ilike.Main warehouse');
+
+      await submit(user);
+      expect(await screen.findByText('Shift created.')).toBeInTheDocument();
+    });
+
+    it('compares titles when there is no location', async () => {
+      const requests: URLSearchParams[] = [];
+      server.use(
+        shiftHandlers.overlaps([summaryOf(testShift), summaryOf(afternoonShift)], (params) =>
+          requests.push(params),
+        ),
+      );
+      const { user } = renderCreate();
+
+      await screen.findByRole('heading', { level: 1, name: 'New shift' });
+      await fillShift(user);
+
+      expect(
+        await screen.findByText('This overlaps other shifts called “Morning sorting”:'),
+      ).toBeInTheDocument();
+      expect(requests.at(-1)?.get('title')).toBe('ilike.Morning sorting');
+    });
+
+    it('stays quiet until the times are complete', async () => {
+      const requests: URLSearchParams[] = [];
+      server.use(
+        shiftHandlers.overlaps([summaryOf(afternoonShift)], (params) => requests.push(params)),
+      );
+      const { user } = renderCreate();
+
+      await screen.findByRole('heading', { level: 1, name: 'New shift' });
+      await fill(user, 'Title', 'Morning sorting');
+      await user.type(screen.getByLabelText('Date'), date);
+
+      // Longer than the check's pause, so a request would have gone out by now.
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      expect(requests).toHaveLength(0);
+      expect(screen.queryByText(/This overlaps/)).not.toBeInTheDocument();
+    });
   });
 });

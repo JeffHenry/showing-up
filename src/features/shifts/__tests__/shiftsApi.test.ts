@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
   afterCursorFilter,
+  cancelShift,
   createShift,
+  deleteShift,
+  fetchOverlappingShifts,
   fetchShift,
   fetchShiftPage,
+  updateShift,
 } from '@/features/shifts/api/shiftsApi';
+import type { ShiftInput } from '@/features/shifts/types';
+import { toAppError } from '@/lib/errors';
 import { testOrg } from '@/test/fixtures/orgs';
-import { manyShifts, testShift } from '@/test/fixtures/shifts';
+import { manyShifts, summaryOf, testShift } from '@/test/fixtures/shifts';
+import type { ShiftUpdateRequest } from '@/test/msw/shifts';
 import { server } from '@/test/msw/server';
 import { shiftHandlers } from '@/test/msw/shifts';
 
@@ -105,5 +112,143 @@ describe('createShift', () => {
       end_time: testShift.end_time,
       capacity: 6,
     });
+  });
+});
+
+const input: ShiftInput = {
+  title: 'Morning sorting',
+  location: 'Main warehouse',
+  description: null,
+  startTime: testShift.start_time,
+  endTime: testShift.end_time,
+  capacity: 8,
+};
+
+/** The app error a rejected call produced. */
+async function codeOf(promise: Promise<unknown>) {
+  try {
+    await promise;
+  } catch (error) {
+    return toAppError(error).code;
+  }
+  throw new Error('Expected the call to fail');
+}
+
+describe('updateShift', () => {
+  it('saves only if the shift is still at the version the editor loaded', async () => {
+    let sent: ShiftUpdateRequest | undefined;
+    server.use(shiftHandlers.updateOk((request) => (sent = request)));
+
+    await updateShift({ shiftId: testShift.id, version: 3, input });
+
+    expect(sent).toEqual({
+      id: testShift.id,
+      version: '3',
+      body: {
+        title: 'Morning sorting',
+        location: 'Main warehouse',
+        description: null,
+        start_time: testShift.start_time,
+        end_time: testShift.end_time,
+        capacity: 8,
+      },
+    });
+  });
+
+  it('explains why nothing was saved', async () => {
+    server.use(shiftHandlers.updateNoRows(), shiftHandlers.detail({ ...testShift, version: 2 }));
+    expect(await codeOf(updateShift({ shiftId: testShift.id, version: 1, input }))).toBe(
+      'SHIFT_CHANGED',
+    );
+
+    server.use(shiftHandlers.detail(null));
+    expect(await codeOf(updateShift({ shiftId: testShift.id, version: 1, input }))).toBe(
+      'SHIFT_NOT_FOUND',
+    );
+
+    // Unchanged and still there, yet not saved: row-level security refused.
+    server.use(shiftHandlers.detail(testShift));
+    expect(await codeOf(updateShift({ shiftId: testShift.id, version: 1, input }))).toBe(
+      'NOT_AUTHORIZED',
+    );
+  });
+
+  it('passes on the database’s own refusals', async () => {
+    server.use(shiftHandlers.updateFails('SHIFT_STARTED'));
+    expect(await codeOf(updateShift({ shiftId: testShift.id, version: 1, input }))).toBe(
+      'SHIFT_STARTED',
+    );
+  });
+});
+
+describe('cancelShift', () => {
+  it('sends a trimmed reason, and leaves a blank one out', async () => {
+    const bodies: unknown[] = [];
+    server.use(shiftHandlers.cancelOk((body) => bodies.push(body)));
+
+    await cancelShift({ shiftId: testShift.id, reason: '  Rain forecast ' });
+    await cancelShift({ shiftId: testShift.id, reason: '   ' });
+
+    expect(bodies).toEqual([
+      { p_shift_id: testShift.id, p_reason: 'Rain forecast' },
+      { p_shift_id: testShift.id },
+    ]);
+  });
+});
+
+describe('deleteShift', () => {
+  it('deletes by id, and reports a refusal that removed nothing', async () => {
+    let targeted: string | null = null;
+    server.use(shiftHandlers.deleteOk((id) => (targeted = id)));
+    await deleteShift(testShift.id);
+    expect(targeted).toBe(testShift.id);
+
+    server.use(shiftHandlers.deleteNoRows());
+    expect(await codeOf(deleteShift(testShift.id))).toBe('NOT_AUTHORIZED');
+  });
+});
+
+describe('fetchOverlappingShifts', () => {
+  const window = {
+    start: '2099-10-24T14:00:00.000Z',
+    end: '2099-10-24T17:00:00.000Z',
+    location: 'Room 100%',
+    title: 'Morning sorting',
+    excludeShiftId: null,
+  };
+
+  it('finds active shifts overlapping the time at the same location', async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(shiftHandlers.overlaps([summaryOf(testShift)], (params) => requests.push(params)));
+
+    expect(await fetchOverlappingShifts(testOrg.id, window)).toEqual([summaryOf(testShift)]);
+
+    const [params] = requests;
+    expect(params?.get('org_id')).toBe(`eq.${testOrg.id}`);
+    expect(params?.get('cancelled_at')).toBe('is.null');
+    // Overlapping means starting before this one ends and ending after it starts.
+    expect(params?.get('start_time')).toBe(`lt.${window.end}`);
+    expect(params?.get('end_time')).toBe(`gt.${window.start}`);
+    // Case-insensitive, with LIKE wildcards matched literally.
+    expect(params?.get('location')).toBe(String.raw`ilike.Room 100\%`);
+    expect(params?.has('title')).toBe(false);
+    expect(params?.has('id')).toBe(false);
+    expect(params?.get('limit')).toBe('3');
+  });
+
+  it('compares titles when there is no location, and skips the shift being edited', async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(shiftHandlers.overlaps([], (params) => requests.push(params)));
+
+    await fetchOverlappingShifts(testOrg.id, {
+      ...window,
+      location: null,
+      excludeShiftId: testShift.id,
+    });
+
+    const [params] = requests;
+    expect(params?.get('title')).toBe('ilike.Morning sorting');
+    expect(params?.has('location')).toBe(false);
+    expect(params?.get('id')).toBe(`neq.${testShift.id}`);
   });
 });

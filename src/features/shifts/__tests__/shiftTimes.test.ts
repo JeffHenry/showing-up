@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { latestStart, overnightEnd, resolveShiftTimes } from '@/features/shifts/shiftTimes';
+import {
+  latestStart,
+  overnightEnd,
+  resolveShiftTimes,
+  shiftInterval,
+} from '@/features/shifts/shiftTimes';
 
 const CHICAGO = 'America/Chicago';
 // A fixed "now", so every rule can be tested against known dates.
@@ -69,6 +74,15 @@ describe('resolveShiftTimes', () => {
       field: 'date',
       message: 'Shifts can be scheduled up to a year ahead.',
     });
+  });
+});
+
+describe('shiftInterval', () => {
+  it('works out the interval without the scheduling rules (for overlap checks)', () => {
+    // In the past relative to NOW, which only resolveShiftTimes refuses.
+    expect(
+      shiftInterval({ date: '2026-09-01', startTime: '09:00', endTime: '10:00' }, CHICAGO),
+    ).toMatchObject({ ok: true, start: new Date('2026-09-01T14:00:00Z') });
   });
 });
 
