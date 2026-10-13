@@ -14,3 +14,4 @@ such rather than edited.
 | [0006](0006-app-shell-routing-and-error-handling.md)  | App shell, routing, and error handling             | Accepted |
 | [0007](0007-authentication.md)                        | Authentication                                     | Accepted |
 | [0008](0008-organizations-in-the-app.md)              | Organizations in the app                           | Accepted |
+| [0009](0009-invites.md)                               | Invites                                            | Accepted |

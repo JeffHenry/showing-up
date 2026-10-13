@@ -1,9 +1,11 @@
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, UserPlus } from 'lucide-react';
+import { Link } from 'react-router';
 import { EmptyState } from '@/components/common/EmptyState';
 import { PageHeader } from '@/components/common/PageHeader';
+import { Button } from '@/components/ui/button';
 import { useOrg } from '@/context/useOrg';
 import { OrgAbout } from '@/features/orgs/components/OrgAbout';
-import { ROLE_LABELS } from '@/features/orgs/roles';
+import { ROLE_LABELS } from '@/lib/roles';
 import { APP_NAME } from '@/lib/constants';
 
 /** An organization's home page. Shifts take over the main area once they're built. */
@@ -13,7 +15,21 @@ export function OrgDashboardPage() {
   return (
     <div className="space-y-6">
       <title>{`${org.name} · ${APP_NAME}`}</title>
-      <PageHeader title={org.name} description={`Your role: ${ROLE_LABELS[role]}`} />
+      <PageHeader
+        title={org.name}
+        description={`Your role: ${ROLE_LABELS[role]}`}
+        actions={
+          // Role-gated for UX only: the database decides who can invite.
+          role === 'volunteer' ? undefined : (
+            <Button asChild>
+              <Link to={`/orgs/${org.id}/members`}>
+                <UserPlus aria-hidden="true" data-icon="inline-start" />
+                Invite people
+              </Link>
+            </Button>
+          )
+        }
+      />
       <OrgAbout org={org} />
       <EmptyState
         icon={CalendarDays}

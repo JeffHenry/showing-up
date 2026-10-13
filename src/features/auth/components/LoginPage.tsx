@@ -16,6 +16,8 @@ export function LoginPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);
   // Google appears only where it's enabled; while loading or on error, email sign-in still works.
   const googleEnabled = useAuthProviders().data?.google === true;
+  // Arriving from an invite link: say why they're signing in.
+  const forInvite = next.startsWith('/invite/');
 
   // Covers both "already signed in" and "just signed in with the code".
   if (status === 'authenticated') return <Navigate to={next} replace state={SIGNED_IN_STATE} />;
@@ -25,7 +27,11 @@ export function LoginPage() {
       <title>{`Sign in · ${APP_NAME}`}</title>
       <CardHeader>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {sentTo ? 'Check your email' : 'Sign in to ShowingUp'}
+          {sentTo
+            ? 'Check your email'
+            : forInvite
+              ? 'Sign in to accept your invitation'
+              : 'Sign in to ShowingUp'}
         </h1>
         {!sentTo && (
           <CardDescription>

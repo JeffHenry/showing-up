@@ -14,6 +14,10 @@ export type AppErrorCode =
   | 'ORG_LIMIT_REACHED'
   | 'LAST_OWNER'
   | 'INVALID_INPUT'
+  | 'INVITE_NOT_FOUND'
+  | 'INVITE_EXPIRED'
+  | 'INVITE_USED'
+  | 'INVITE_LIMIT_REACHED'
   | 'NETWORK'
   | 'UNKNOWN';
 
@@ -34,6 +38,13 @@ const MESSAGES: Record<AppErrorCode, string> = {
   ORG_LIMIT_REACHED: "You've already created the maximum of 2 organizations.",
   LAST_OWNER: 'An organization needs at least one owner. Make someone else an owner first.',
   INVALID_INPUT: "Some of those details weren't accepted. Check them and try again.",
+  INVITE_NOT_FOUND:
+    "This invite link isn't valid. It may have been revoked. Ask the person who invited you for a new one.",
+  INVITE_EXPIRED: 'This invite link has expired. Ask the person who invited you for a new one.',
+  INVITE_USED:
+    'This invite link has already been used. Each link works once, so ask for a new one.',
+  INVITE_LIMIT_REACHED:
+    'This organization already has 25 pending invites. Revoke some you no longer need first.',
   NETWORK: "We couldn't reach the server. Check your connection and try again.",
   UNKNOWN: 'Something went wrong. Please try again.',
 };
@@ -57,9 +68,14 @@ const DATABASE_ERROR_CODES: Partial<Record<string, AppErrorCode>> = {
   SLUG_TAKEN: 'SLUG_TAKEN',
   ORG_LIMIT_REACHED: 'ORG_LIMIT_REACHED',
   LAST_OWNER: 'LAST_OWNER',
+  INVITE_NOT_FOUND: 'INVITE_NOT_FOUND',
+  INVITE_EXPIRED: 'INVITE_EXPIRED',
+  INVITE_USED: 'INVITE_USED',
+  INVITE_LIMIT_REACHED: 'INVITE_LIMIT_REACHED',
 };
 
-function appError(code: AppErrorCode): AppError {
+/** The friendly error for a known code, e.g. to explain an expired invite the API reported. */
+export function appError(code: AppErrorCode): AppError {
   return { code, message: MESSAGES[code] };
 }
 

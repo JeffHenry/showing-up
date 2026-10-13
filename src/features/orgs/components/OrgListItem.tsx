@@ -1,6 +1,6 @@
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router';
-import { RoleBadge } from '@/features/orgs/components/RoleBadge';
+import { RoleBadge } from '@/components/common/RoleBadge';
 import type { MyOrganization } from '@/features/orgs/types';
 
 export function OrgListItem({ org }: { org: MyOrganization }) {

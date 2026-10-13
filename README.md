@@ -10,8 +10,8 @@ phone, and gives coordinators an approval queue for logged hours and exportable 
 multi-tenant: a person can volunteer at one organization and coordinate at another, with
 permissions enforced by the database itself rather than by the UI.
 
-> **Live site:** [showing-up.vercel.app](https://showing-up.vercel.app) (sign in and create an
-> organization today; invites and scheduling arrive next) · **Screenshots:** _coming with the MVP_
+> **Live site:** [showing-up.vercel.app](https://showing-up.vercel.app) (sign in, create an
+> organization, and invite people today; scheduling arrives next) · **Screenshots:** _coming with the MVP_
 
 ---
 
@@ -48,7 +48,9 @@ README is updated with every merged PR.
 - [x] **Organizations:** create, list, switch; creator becomes owner
   - [x] Database: optional profile fields, 2-per-user creation limit
   - [x] Organization list, create form, organization switcher, `OrgContext`
-- [ ] **Invites:** generate link, redeem via RPC
+- [x] **Invites:** generate link, redeem via RPC
+  - [x] Database: hashed single-use tokens, role tiers, row-locked redemption
+  - [x] Members page (create, copy, revoke links) and accept-invite page
 - [ ] **Shifts:** create/edit/delete for coordinators, list with cursor pagination
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
 - [ ] **My Shifts** view
@@ -229,7 +231,8 @@ the API directly gets exactly the same answers as the UI. See
   and expires after 7 days. Redeeming locks the invite row, so two people can't both use one link,
   and joining is idempotent for existing members (it never changes their role). Owners can invite
   coordinators and volunteers, coordinators only volunteers, and nobody can be invited as an
-  owner. Signed-out users still can't call any database function: invitees sign in first.
+  owner. Signed-out users still can't call any database function: invitees sign in first. See
+  [ADR 0009](docs/adr/0009-invites.md).
 
 **Planned**
 

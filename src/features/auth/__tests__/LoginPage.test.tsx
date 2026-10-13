@@ -172,6 +172,16 @@ describe('LoginPage: code step', () => {
   });
 });
 
+describe('LoginPage: from an invite link', () => {
+  it('explains that signing in accepts the invitation', async () => {
+    renderLogin('/login?next=%2Finvite%2Fabc123');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Sign in to accept your invitation' }),
+    ).toBeInTheDocument();
+  });
+});
+
 describe('LoginPage: Google', () => {
   it("sends the browser to Google's consent screen via Supabase", async () => {
     const { user } = renderLogin('/login?next=%2Forgs');

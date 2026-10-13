@@ -4,7 +4,9 @@ import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { routes } from '@/app/router';
 import { otherTestOrg, testOrg } from '@/test/fixtures/orgs';
-import { orgHandlers, REST_URL } from '@/test/msw/orgs';
+import { inviteHandlers } from '@/test/msw/invites';
+import { orgHandlers } from '@/test/msw/orgs';
+import { REST_URL } from '@/test/msw/rest';
 import { server } from '@/test/msw/server';
 import { renderRoutes } from '@/test/render';
 
@@ -22,6 +24,10 @@ describe('organization pages', () => {
       await screen.findByRole('heading', { level: 1, name: 'Riverside Food Bank' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Your role: Owner')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Invite people' })).toHaveAttribute(
+      'href',
+      `/orgs/${testOrg.id}/members`,
+    );
     expect(screen.getByRole('heading', { name: 'About' })).toBeInTheDocument();
     expect(screen.getByText('Feeding families since 1998.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'hello@riverside.example' })).toHaveAttribute(
@@ -113,8 +119,28 @@ describe('organization pages', () => {
       await screen.findByRole('heading', { level: 1, name: 'Eastside Pantry' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Your role: Volunteer')).toBeInTheDocument();
+    // Volunteers can't invite, so the dashboard doesn't offer it.
+    expect(screen.queryByRole('link', { name: 'Invite people' })).not.toBeInTheDocument();
     // Eastside Pantry has no optional details, so there's no About card.
     expect(screen.queryByRole('heading', { name: 'About' })).not.toBeInTheDocument();
+  });
+
+  it('opens the Members page for owners and coordinators', async () => {
+    server.use(orgHandlers.list([testOrg]), inviteHandlers.pending([]));
+    const { user } = renderOrg();
+
+    await user.click(await screen.findByRole('link', { name: 'Invite people' }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Members' })).toBeInTheDocument();
+  });
+
+  it('keeps volunteers out of the Members page', async () => {
+    server.use(orgHandlers.list([otherTestOrg]));
+    renderRoutes(routes, { route: `/orgs/${otherTestOrg.id}/members`, auth: 'signedIn' });
+
+    expect(
+      await screen.findByRole('heading', { name: "You don't have access to this page" }),
+    ).toBeInTheDocument();
   });
 
   it('has no detectable accessibility violations', async () => {

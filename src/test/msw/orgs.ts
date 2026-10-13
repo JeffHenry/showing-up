@@ -1,14 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import type { MyOrganization } from '@/features/orgs/types';
 import { organizationOf } from '@/test/fixtures/orgs';
-
-/** Supabase's REST API (PostgREST) as the real client calls it in tests (see vite.config.ts env). */
-export const REST_URL = 'http://localhost:54321/rest/v1';
-
-/** An error body in PostgREST's format. */
-function restError(status: number, code: string, message: string) {
-  return HttpResponse.json({ code, message, details: null, hint: null }, { status });
-}
+import { REST_URL, restError } from '@/test/msw/rest';
 
 export const orgHandlers = {
   /** The user's organizations, shaped like `select(..., memberships!inner(role))` returns them. */
