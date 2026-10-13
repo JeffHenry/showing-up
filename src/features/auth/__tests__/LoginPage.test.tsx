@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
-import { delay, http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { useLocation } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '@/context/AuthProvider';
@@ -8,6 +8,7 @@ import { LoginPage } from '@/features/auth/components/LoginPage';
 import { redirectTo } from '@/lib/navigation';
 import { isFreshSignIn } from '@/lib/redirects';
 import { queryKeys } from '@/lib/queryKeys';
+import { createGate } from '@/test/gate';
 import { AUTH_URL, authHandlers } from '@/test/msw/auth';
 import { server } from '@/test/msw/server';
 import { renderRoutes } from '@/test/render';
@@ -70,9 +71,10 @@ describe('LoginPage: email step', () => {
   });
 
   it('disables the button while the email is sending', async () => {
+    const gate = createGate();
     server.use(
       http.post(`${AUTH_URL}/otp`, async () => {
-        await delay(50);
+        await gate.opened;
         return HttpResponse.json({});
       }),
     );
@@ -80,7 +82,8 @@ describe('LoginPage: email step', () => {
 
     await submitEmail(user, 'volunteer@example.test');
 
-    expect(screen.getByRole('button', { name: 'Sending…' })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Sending…' })).toBeDisabled();
+    gate.open();
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
   });
 
