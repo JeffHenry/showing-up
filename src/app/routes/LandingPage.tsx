@@ -1,7 +1,10 @@
 import { CalendarPlus, Clock, ExternalLink, UserCheck } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, Navigate } from 'react-router';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/useAuth';
 import { APP_NAME, REPO_URL } from '@/lib/constants';
+import { ENTRY_STATE } from '@/lib/redirects';
+import { hasStoredSession } from '@/lib/session';
 
 const HIGHLIGHTS = [
   {
@@ -21,7 +24,24 @@ const HIGHLIGHTS = [
   },
 ] as const;
 
+/**
+ * The public home page. Signed-in visitors go straight into the app instead: to their only
+ * organization, or to their organization list (`/orgs` decides, using the entry state).
+ */
 export function LandingPage() {
+  const { status } = useAuth();
+
+  if (status === 'authenticated') return <Navigate to="/orgs" replace state={ENTRY_STATE} />;
+
+  // A returning user's session is still being confirmed: don't flash the marketing page first.
+  if (status === 'loading' && hasStoredSession()) {
+    return (
+      <p role="status" className="py-12 text-center text-muted-foreground">
+        Opening ShowingUp…
+      </p>
+    );
+  }
+
   return (
     <>
       <title>{`${APP_NAME} · Volunteer scheduling for small nonprofits`}</title>
@@ -49,7 +69,8 @@ export function LandingPage() {
           </Button>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          In active development: sign-in works today; organizations and scheduling are next.
+          In active development: organizations, invites, and member management work today; shift
+          scheduling is next.
         </p>
       </section>
 

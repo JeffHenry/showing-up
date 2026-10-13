@@ -3,7 +3,7 @@ import { axe } from 'jest-axe';
 import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { OrgsPage } from '@/features/orgs/components/OrgsPage';
-import { SIGNED_IN_STATE } from '@/lib/redirects';
+import { ENTRY_STATE } from '@/lib/redirects';
 import { testUser } from '@/test/fixtures/auth';
 import { otherTestOrg, testOrg } from '@/test/fixtures/orgs';
 import { orgHandlers } from '@/test/msw/orgs';
@@ -108,7 +108,7 @@ describe('OrgsPage', () => {
 
   it('opens the only organization straight after signing in', async () => {
     server.use(orgHandlers.list([testOrg]));
-    renderOrgs({ pathname: '/orgs', state: SIGNED_IN_STATE });
+    renderOrgs({ pathname: '/orgs', state: ENTRY_STATE });
 
     expect(
       await screen.findByRole('heading', { name: 'Organization dashboard' }),
@@ -117,7 +117,7 @@ describe('OrgsPage', () => {
 
   it('shows the list after signing in when there are several organizations', async () => {
     server.use(orgHandlers.list([otherTestOrg, testOrg]));
-    renderOrgs({ pathname: '/orgs', state: SIGNED_IN_STATE });
+    renderOrgs({ pathname: '/orgs', state: ENTRY_STATE });
 
     expect(await screen.findAllByRole('link', { name: /Pantry|Food Bank/ })).toHaveLength(2);
   });

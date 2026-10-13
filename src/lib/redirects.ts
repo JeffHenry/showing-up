@@ -25,14 +25,13 @@ export function loginPath(next: string): string {
 }
 
 /**
- * Router navigation state for the first page after signing in, so pages can tell a fresh sign-in
- * from a later visit (e.g. `/orgs` opens a user's only organization straight after sign-in).
+ * Router navigation state for arriving at the app: straight after signing in, or a signed-in
+ * visit to the home page. Pages can tell an arrival from a later visit, e.g. `/orgs` opens a
+ * user's only organization on arrival but shows the list when visited directly.
  */
-export const SIGNED_IN_STATE = { signedIn: true } as const;
+export const ENTRY_STATE = { entry: true } as const;
 
-/** Whether `location.state` marks the first navigation after signing in. */
-export function isFreshSignIn(state: unknown): boolean {
-  return (
-    typeof state === 'object' && state !== null && 'signedIn' in state && state.signedIn === true
-  );
+/** Whether `location.state` marks an arrival at the app (see `ENTRY_STATE`). */
+export function isEntryNavigation(state: unknown): boolean {
+  return typeof state === 'object' && state !== null && 'entry' in state && state.entry === true;
 }

@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useMyOrganizations } from '@/features/orgs/api/useMyOrganizations';
 import { OrgListItem } from '@/features/orgs/components/OrgListItem';
 import { APP_NAME } from '@/lib/constants';
-import { isFreshSignIn } from '@/lib/redirects';
+import { isEntryNavigation } from '@/lib/redirects';
 
 const newOrgButton = (
   <Button asChild>
@@ -36,7 +36,7 @@ export function OrgsPage() {
 
   // Straight after signing in, someone with a single organization (most volunteers) skips the list.
   const [onlyOrg, ...otherOrgs] = orgs ?? [];
-  if (isFreshSignIn(location.state) && onlyOrg && otherOrgs.length === 0) {
+  if (isEntryNavigation(location.state) && onlyOrg && otherOrgs.length === 0) {
     return <Navigate to={`/orgs/${onlyOrg.id}`} replace />;
   }
 
