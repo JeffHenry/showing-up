@@ -11,7 +11,7 @@ multi-tenant: a person can volunteer at one organization and coordinate at anoth
 permissions enforced by the database itself rather than by the UI.
 
 > **Live site:** [showing-up.vercel.app](https://showing-up.vercel.app) (sign in, create an
-> organization, and invite people today; scheduling arrives next) · **Screenshots:** _coming with the MVP_
+> organization, invite and manage members today; scheduling arrives next) · **Screenshots:** _coming with the MVP_
 
 ---
 
@@ -51,10 +51,10 @@ README is updated with every merged PR.
 - [x] **Invites:** generate link, redeem via RPC
   - [x] Database: hashed single-use tokens, role tiers, row-locked redemption
   - [x] Members page (create, copy, revoke links) and accept-invite page
-- [ ] **Members:** display names, member roster, role changes, leaving an organization
+- [x] **Members:** display names, member roster, role changes, leaving an organization
   - [x] Database: roster function with coordinator-only emails, self-leave rule, non-blank names
   - [x] Display names (one-time step after sign-in, account page)
-  - [ ] Member roster, role changes, removal, leaving
+  - [x] Member roster (search and role filter in the URL), role changes, removal, leaving, recently accepted invites
 - [ ] **Shifts:** create/edit/delete for coordinators, list with cursor pagination
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
 - [ ] **My Shifts** view

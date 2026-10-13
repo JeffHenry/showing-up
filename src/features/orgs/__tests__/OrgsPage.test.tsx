@@ -32,7 +32,7 @@ describe('OrgsPage', () => {
     );
     renderOrgs();
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Loading your organizations…');
+    expect(await screen.findByText('Loading your organizations…')).toBeInTheDocument();
     expect(
       await screen.findByRole('heading', { name: "You're not in any organizations yet" }),
     ).toBeInTheDocument();

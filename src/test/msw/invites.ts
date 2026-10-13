@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { InviteStatus, PendingInvite } from '@/features/invites/types';
+import type { AcceptedInvite, InviteStatus, PendingInvite } from '@/features/invites/types';
 import type { MembershipRole } from '@/context/orgContext';
 import { testOrg } from '@/test/fixtures/orgs';
 import { REST_URL, restError } from '@/test/msw/rest';
@@ -11,12 +11,44 @@ interface PreviewOptions {
   role?: MembershipRole;
 }
 
+/**
+ * Pending and accepted invites share `GET /invites`; they differ in the `used_at` filter
+ * (`is.null` vs `not.is.null`). Handlers answer only their own list and otherwise fall through.
+ */
+function isPendingRequest(request: Request) {
+  return new URL(request.url).searchParams.get('used_at') === 'is.null';
+}
+
 export const inviteHandlers = {
-  /** An organization's pending invites (`GET /invites`). */
+  /** An organization's pending invites. */
   pending: (invites: PendingInvite[]) =>
-    http.get(`${REST_URL}/invites`, () => HttpResponse.json(invites)),
+    http.get(`${REST_URL}/invites`, ({ request }) =>
+      isPendingRequest(request) ? HttpResponse.json(invites) : undefined,
+    ),
   pendingFails: () =>
-    http.get(`${REST_URL}/invites`, () => restError(500, 'XX000', 'internal error')),
+    http.get(`${REST_URL}/invites`, ({ request }) =>
+      isPendingRequest(request) ? restError(500, 'XX000', 'internal error') : undefined,
+    ),
+  /** Recently accepted invites, shaped like the embedded-profiles select returns them. */
+  accepted: (invites: AcceptedInvite[]) =>
+    http.get(`${REST_URL}/invites`, ({ request }) =>
+      isPendingRequest(request)
+        ? undefined
+        : HttpResponse.json(
+            invites.map((invite) => ({
+              id: invite.id,
+              role: invite.role,
+              used_at: invite.usedAt,
+              used_by: invite.usedByName === null ? null : { full_name: invite.usedByName },
+              created_by:
+                invite.createdByName === null ? null : { full_name: invite.createdByName },
+            })),
+          ),
+    ),
+  acceptedFails: () =>
+    http.get(`${REST_URL}/invites`, ({ request }) =>
+      isPendingRequest(request) ? undefined : restError(500, 'XX000', 'internal error'),
+    ),
   /** `create_invite` succeeding; `onBody` receives the request's named arguments. */
   createOk: (token: string, expiresAt: string, onBody?: (body: unknown) => void) =>
     http.post(`${REST_URL}/rpc/create_invite`, async ({ request }) => {

@@ -1,11 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchInvitePreview, fetchPendingInvites } from '@/features/invites/api/invitesApi';
+import {
+  fetchAcceptedInvites,
+  fetchInvitePreview,
+  fetchPendingInvites,
+} from '@/features/invites/api/invitesApi';
 import { queryKeys } from '@/lib/queryKeys';
 
 export function usePendingInvites(orgId: string) {
   return useQuery({
     queryKey: queryKeys.invites.pending(orgId),
     queryFn: () => fetchPendingInvites(orgId),
+  });
+}
+
+export function useAcceptedInvites(orgId: string) {
+  return useQuery({
+    queryKey: queryKeys.invites.accepted(orgId),
+    queryFn: () => fetchAcceptedInvites(orgId),
   });
 }
 

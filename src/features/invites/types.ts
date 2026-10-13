@@ -16,6 +16,15 @@ export interface NewInvite {
   expiresAt: string;
 }
 
+/** A used invite, with who used it and who sent it (null when that person is no longer visible). */
+export interface AcceptedInvite {
+  id: string;
+  role: InviteRole;
+  usedAt: string;
+  usedByName: string | null;
+  createdByName: string | null;
+}
+
 export type InviteStatus = 'valid' | 'expired' | 'used' | 'member';
 
 export interface InvitePreview {

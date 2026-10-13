@@ -119,8 +119,7 @@ export const routes: RouteObject[] = [
                       {
                         path: 'members',
                         lazy: async () => ({
-                          Component: (await import('@/features/invites/components/MembersPage'))
-                            .MembersPage,
+                          Component: (await import('@/app/routes/MembersPage')).MembersPage,
                         }),
                       },
                     ],
