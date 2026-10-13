@@ -132,8 +132,9 @@ message, and refuses a secret key placed in a browser-exposed variable. See
 
 ### Data model
 
-`profiles`, `organizations`, and `memberships` are live ([migrations](supabase/migrations/)).
-Shifts, signups, invites, and hours logs are planned and each arrive with their feature.
+`profiles`, `organizations`, `memberships`, and `invites` are live
+([migrations](supabase/migrations/)). Shifts, signups, and hours logs are planned and each arrive
+with their feature.
 Organizations hold only what the app uses: a description, contact email, and website are optional,
 and nothing else (no tax IDs or phone numbers) is collected.
 
@@ -180,8 +181,10 @@ erDiagram
     text status "pending | approved | rejected"
   }
   invites {
-    text token_hash "SHA-256, never the raw token"
-    timestamptz expires_at
+    enum role "coordinator | volunteer"
+    bytea token_hash "SHA-256, never the raw token"
+    timestamptz expires_at "7 days"
+    timestamptz used_at "single use"
   }
 ```
 
@@ -193,7 +196,7 @@ Authorization lives in Postgres. The UI only hides controls a user can't use; a 
 the API directly gets exactly the same answers as the UI. See
 [ADR 0004](docs/adr/0004-database-authorization-model.md).
 
-**In place now** (tested by [50 pgTAP assertions](supabase/tests/database/))
+**In place now** (tested by [83 pgTAP assertions](supabase/tests/database/))
 
 - **Row-level security on every table**, with a test that fails if any future table ships
   without it.
@@ -221,13 +224,17 @@ the API directly gets exactly the same answers as the UI. See
 - **Organization pages don't confirm what you can't see.** A missing organization and one you
   don't belong to get the same "not found" answer. See
   [ADR 0008](docs/adr/0008-organizations-in-the-app.md).
+- **Invite links are single-use and stored only as hashes.** The database generates each token
+  (32 random bytes) and keeps only its SHA-256 hash; the link is shown once to whoever created it
+  and expires after 7 days. Redeeming locks the invite row, so two people can't both use one link,
+  and joining is idempotent for existing members (it never changes their role). Owners can invite
+  coordinators and volunteers, coordinators only volunteers, and nobody can be invited as an
+  owner. Signed-out users still can't call any database function: invitees sign in first.
 
 **Planned**
 
 - **Race-free shift claiming.** `claim_shift()` locks the shift row (`SELECT … FOR UPDATE`) before
   counting confirmed signups, so two volunteers can't both take the last spot.
-- **Invite tokens are hashed.** Only a SHA-256 hash is stored; links expire after 7 days and are
-  single use.
 - **Secrets stay server-side.** The browser only receives the public Supabase URL and publishable
   key; the secret key exists only in Vercel functions.
 
