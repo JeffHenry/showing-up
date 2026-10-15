@@ -60,6 +60,9 @@ README is updated with every merged PR.
   - [x] Shift list (upcoming/past, grouped by day, Load more) and detail, create form
   - [x] Edit, duplicate, cancel, delete, conflict and overlap warnings
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
+  - [x] Database: race-free claiming, overlap and capacity rules, drop-out lock, departures
+  - [ ] Volunteers sign up and drop out (optimistic UI)
+  - [ ] Coordinators see who's coming and remove someone
 - [ ] **My Shifts** view
 - [ ] **Role-based navigation**
   - [x] Organization navigation (Overview, and Members for coordinators and owners)
@@ -165,9 +168,8 @@ message, and refuses a secret key placed in a browser-exposed variable. See
 
 ### Data model
 
-`profiles`, `organizations`, `memberships`, `invites`, and `shifts` are live
-([migrations](supabase/migrations/)). Signups and hours logs are planned and each arrive with
-their feature.
+`profiles`, `organizations`, `memberships`, `invites`, `shifts`, and `signups` are live
+([migrations](supabase/migrations/)). Hours logs are planned and arrive with their feature.
 Organizations hold only what the app uses: a description, contact email, and website are optional,
 and nothing else (no tax IDs or phone numbers) is collected.
 
@@ -207,11 +209,15 @@ erDiagram
     timestamptz start_time "UTC, shown in the org's time zone"
     timestamptz end_time "after start, at most 24 hours"
     int capacity "1 to 500"
-    int version "bumped on every change"
+    int version "bumped when the shift itself changes"
+    int confirmed_count "kept by a trigger on signups"
     timestamptz cancelled_at "cancelled shifts stay visible"
   }
   signups {
-    text status "confirmed | cancelled | waitlisted"
+    uuid shift_id
+    uuid user_id "unique per shift"
+    enum status "confirmed | cancelled"
+    uuid cancelled_by "the volunteer, or a coordinator"
   }
   hours_logs {
     int minutes
@@ -233,7 +239,7 @@ Authorization lives in Postgres. The UI only hides controls a user can't use; a 
 the API directly gets exactly the same answers as the UI. See
 [ADR 0004](docs/adr/0004-database-authorization-model.md).
 
-**In place now** (tested by [149 pgTAP assertions](supabase/tests/database/))
+**In place now** (tested by [201 pgTAP assertions](supabase/tests/database/))
 
 - **Row-level security on every table**, with a test that fails if any future table ships
   without it.
@@ -282,11 +288,19 @@ the API directly gets exactly the same answers as the UI. See
   the version still matches what it loaded, so when two coordinators edit the same shift, the
   second one is told about the change instead of silently overwriting it, and can load the
   latest version. See [ADR 0011](docs/adr/0011-shifts.md).
+- **Race-free shift claiming.** `claim_shift()` locks the shift row (`SELECT … FOR UPDATE`) before
+  checking capacity, so concurrent claims queue up and two volunteers can't both take the last
+  spot. It then locks the volunteer's own profile row, so two overlapping shifts claimed at the
+  same moment can't both slip past the double-booking check. Signups are written only by
+  `claim_shift()` and `cancel_signup()`; the table itself is read-only through the API.
+- **Volunteers see counts, not names.** Each shift carries a trigger-maintained
+  `confirmed_count`, so everyone sees how full it is, while volunteers can read only their own
+  signups and coordinators see who's coming. Signups lock once the shift starts; people who
+  leave an organization lose their upcoming signups there; a shift people signed up for can't be
+  deleted (cancel it instead) or shrunk below the people already coming.
 
 **Planned**
 
-- **Race-free shift claiming.** `claim_shift()` locks the shift row (`SELECT … FOR UPDATE`) before
-  counting confirmed signups, so two volunteers can't both take the last spot.
 - **Secrets stay server-side.** The browser only receives the public Supabase URL and publishable
   key; the secret key exists only in Vercel functions.
 

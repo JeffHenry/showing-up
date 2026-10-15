@@ -117,14 +117,14 @@ isOneToOne: false
                   ]
                 },"shifts": {
                   Row: {
-                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"capacity": number,"created_at": string,"created_by": string | null,"description": string | null,"end_time": string,"id": string,"location": string | null,"org_id": string,"start_time": string,"title": string,"updated_at": string,"version": number
+                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"capacity": number,"confirmed_count": number,"created_at": string,"created_by": string | null,"description": string | null,"end_time": string,"id": string,"location": string | null,"org_id": string,"start_time": string,"title": string,"updated_at": string,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"capacity": number,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"end_time": string,"id"?: string,"location"?: string | null,"org_id": string,"start_time": string,"title": string,"updated_at"?: string,"version"?: number
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"capacity": number,"confirmed_count"?: number,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"end_time": string,"id"?: string,"location"?: string | null,"org_id": string,"start_time": string,"title": string,"updated_at"?: string,"version"?: number
                   }
                   Update: {
-                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"capacity"?: number,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"end_time"?: string,"id"?: string,"location"?: string | null,"org_id"?: string,"start_time"?: string,"title"?: string,"updated_at"?: string,"version"?: number
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"capacity"?: number,"confirmed_count"?: number,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"end_time"?: string,"id"?: string,"location"?: string | null,"org_id"?: string,"start_time"?: string,"title"?: string,"updated_at"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -147,6 +147,44 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"signups": {
+                  Row: {
+                    "cancelled_at": string | null,"cancelled_by": string | null,"created_at": string,"id": string,"org_id": string,"shift_id": string,"status": Database["public"]['Enums']["signup_status"],"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cancelled_at"?: string | null,"cancelled_by"?: string | null,"created_at"?: string,"id"?: string,"org_id": string,"shift_id": string,"status"?: Database["public"]['Enums']["signup_status"],"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "cancelled_at"?: string | null,"cancelled_by"?: string | null,"created_at"?: string,"id"?: string,"org_id"?: string,"shift_id"?: string,"status"?: Database["public"]['Enums']["signup_status"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "signups_cancelled_by_fkey"
+      columns: ["cancelled_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signups_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signups_shift_id_fkey"
+      columns: ["shift_id"]
+isOneToOne: false
+      referencedRelation: "shifts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signups_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -155,6 +193,12 @@ isOneToOne: false
           Functions: {
             "cancel_shift":
 { Args: { "p_reason"?: string,"p_shift_id": string }; Returns: undefined
+                           },
+"cancel_signup":
+{ Args: { "p_shift_id": string,"p_user_id"?: string }; Returns: undefined
+                           },
+"claim_shift":
+{ Args: { "p_shift_id": string }; Returns: undefined
                            },
 "create_invite":
 { Args: { "p_org_id": string,"p_role"?: Database["public"]['Enums']["membership_role"] }; Returns: {
@@ -194,7 +238,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "membership_role": "owner"|"coordinator"|"volunteer"
+            "membership_role": "owner"|"coordinator"|"volunteer","signup_status": "confirmed"|"cancelled"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -314,7 +358,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "membership_role": ["owner", "coordinator", "volunteer"]
+            "membership_role": ["owner", "coordinator", "volunteer"],"signup_status": ["confirmed", "cancelled"]
           }
         }
 } as const
