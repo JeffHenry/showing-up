@@ -40,7 +40,7 @@ export function LeaveOrganization() {
         open={open}
         onOpenChange={setOpen}
         title={`Leave ${org.name}?`}
-        description="You'll lose access until someone invites you again."
+        description="You'll lose access until someone invites you again, and your upcoming shift signups there are cancelled."
         confirmLabel="Leave"
         pendingLabel="Leaving…"
         destructive

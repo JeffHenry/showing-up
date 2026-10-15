@@ -47,7 +47,9 @@ describe('leaving an organization', () => {
     );
 
     const dialog = await startLeaving(user);
-    expect(dialog).toHaveTextContent("You'll lose access until someone invites you again.");
+    expect(dialog).toHaveTextContent(
+      "You'll lose access until someone invites you again, and your upcoming shift signups there are cancelled.",
+    );
     await user.click(within(dialog).getByRole('button', { name: 'Leave' }));
 
     expect(

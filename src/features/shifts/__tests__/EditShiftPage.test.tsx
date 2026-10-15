@@ -134,6 +134,27 @@ describe('EditShiftPage', () => {
     });
   });
 
+  it('says how many people are signed up, and explains a capacity below that', async () => {
+    server.use(shiftHandlers.updateFails('CAPACITY_BELOW_SIGNUPS'));
+    const { user } = renderEdit({ ...upcomingShift, confirmed_count: 3 });
+
+    const capacity = await screen.findByLabelText('Volunteers needed');
+    expect(capacity).toHaveAccessibleDescription('3 people are signed up, so keep at least 3.');
+    await user.clear(capacity);
+    await user.type(capacity, '2');
+    await save(user);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'More people are already signed up than that.',
+    );
+  });
+
+  it('gives no signup hint when no one has signed up', async () => {
+    renderEdit({ ...upcomingShift, confirmed_count: 0 });
+
+    expect(await screen.findByLabelText('Volunteers needed')).not.toHaveAccessibleDescription();
+  });
+
   it('says so when the shift was deleted meanwhile', async () => {
     const { user } = renderEdit();
 

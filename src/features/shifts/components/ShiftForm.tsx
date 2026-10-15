@@ -35,6 +35,8 @@ interface ShiftFormProps {
   requestError: AppError | null;
   /** Shown with the request error, e.g. a way to load the latest version after a conflict. */
   errorAction?: ReactNode;
+  /** Help under "Volunteers needed", e.g. how many are already signed up. */
+  capacityHint?: string;
   /** Moves focus to the first field on mount, e.g. after reloading a newer version. */
   focusFirstField?: boolean;
   onSubmit: (input: ShiftInput) => void;
@@ -53,6 +55,7 @@ export function ShiftForm({
   isDone,
   requestError,
   errorAction,
+  capacityHint,
   focusFirstField = false,
   onSubmit,
 }: ShiftFormProps) {
@@ -98,7 +101,12 @@ export function ShiftForm({
         control={control}
         excludeShiftId={shiftId}
       />
-      <FormField id="shift-capacity" label="Volunteers needed" error={errors.capacity?.message}>
+      <FormField
+        id="shift-capacity"
+        label="Volunteers needed"
+        hint={capacityHint}
+        error={errors.capacity?.message}
+      >
         {(field) => (
           <Input
             {...field}

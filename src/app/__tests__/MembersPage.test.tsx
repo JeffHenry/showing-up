@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
@@ -281,7 +281,10 @@ describe('MembersPage: the whole page', () => {
     await screen.findByRole('heading', { name: 'Members (4)' });
     await user.click(screen.getByRole('link', { name: 'Invite people' }));
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Invite people' })).toHaveFocus();
+    // The page moves focus in an effect, so wait for it rather than checking synchronously.
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2, name: 'Invite people' })).toHaveFocus();
+    });
   });
 
   it('drops the owner controls after you step down', async () => {

@@ -1,3 +1,4 @@
+import type { ShiftSignup } from '@/features/signups/types';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -25,4 +26,28 @@ export async function cancelSignup({
     p_user_id: userId,
   });
   if (error) throw error;
+}
+
+/**
+ * Who's coming to a shift, earliest signup first. Coordinators and owners see everyone
+ * (row-level security shows volunteers only their own signup, so they never call this).
+ */
+export async function fetchShiftSignups(shiftId: string): Promise<ShiftSignup[]> {
+  const { data, error } = await supabase
+    .from('signups')
+    .select('user_id, updated_at, profile:profiles!signups_user_id_fkey(full_name)')
+    .eq('shift_id', shiftId)
+    .eq('status', 'confirmed')
+    .order('updated_at');
+  if (error) throw error;
+  return data.map((row) => {
+    // Typed as always present (the foreign key is required), but row-level security hides the
+    // profile of anyone who no longer shares an organization with the viewer.
+    const profile = row.profile as { full_name: string | null } | null;
+    return {
+      userId: row.user_id,
+      fullName: profile?.full_name ?? null,
+      signedUpAt: row.updated_at,
+    };
+  });
 }

@@ -34,6 +34,9 @@ async function actionNames() {
   ].map((element) => element.textContent);
 }
 
+/** An upcoming shift no one has signed up for yet (so it can still be deleted). */
+const openShift: ShiftDetail = { ...testShift, confirmed_count: 0 };
+
 /** A shift that started an hour ago. */
 function startedShift(): ShiftDetail {
   const now = Date.now();
@@ -46,7 +49,7 @@ function startedShift(): ShiftDetail {
 
 describe('managing a shift', () => {
   it('offers coordinators every action on an upcoming shift', async () => {
-    renderShift(testShift);
+    renderShift(openShift);
 
     expect(await actionNames()).toEqual(['Edit', 'Duplicate', 'Cancel shift', 'Delete']);
     expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute(
@@ -57,6 +60,17 @@ describe('managing a shift', () => {
       'href',
       `/orgs/${testOrg.id}/shifts/new?from=${testShift.id}`,
     );
+  });
+
+  it('offers cancelling instead of deleting once people are signed up', async () => {
+    renderShift(testShift);
+
+    expect(await actionNames()).toEqual(['Edit', 'Duplicate', 'Cancel shift']);
+    expect(
+      screen.getByText(
+        'People are signed up, so this shift can’t be deleted. Cancel it instead, so they know it’s off.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('offers only duplicating and deleting a cancelled shift', async () => {
@@ -119,7 +133,11 @@ describe('cancelling a shift', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 2, name: 'Manage shift' })).toHaveFocus();
     });
-    expect(await actionNames()).toEqual(['Duplicate', 'Delete']);
+    // It still has signups (they're kept), so it can't be deleted either.
+    expect(await actionNames()).toEqual(['Duplicate']);
+    expect(
+      screen.getByText('People are signed up, so this shift can’t be deleted.'),
+    ).toBeInTheDocument();
   });
 
   it('keeps the shift when the dialog is dismissed, returning focus to the button', async () => {
@@ -164,7 +182,7 @@ describe('deleting a shift', () => {
       shiftHandlers.deleteOk((id) => (deletedId = id)),
       shiftHandlers.list([summaryOf(afternoonShift)]),
     );
-    const { user, router } = renderShift(testShift);
+    const { user, router } = renderShift(openShift);
 
     await user.click(await screen.findByRole('button', { name: 'Delete' }));
     const dialog = await screen.findByRole('alertdialog', { name: 'Delete “Morning sorting”?' });
@@ -178,7 +196,7 @@ describe('deleting a shift', () => {
 
   it('explains a refusal inside the dialog', async () => {
     server.use(shiftHandlers.deleteNoRows());
-    const { user } = renderShift(testShift);
+    const { user } = renderShift(openShift);
 
     await user.click(await screen.findByRole('button', { name: 'Delete' }));
     const dialog = await screen.findByRole('alertdialog');

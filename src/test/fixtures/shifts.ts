@@ -41,6 +41,7 @@ export const cancelledShift: ShiftDetail = {
   title: 'Food drive',
   start_time: '2099-10-25T15:00:00+00:00',
   end_time: '2099-10-25T18:00:00+00:00',
+  confirmed_count: 0,
   cancelled_at: '2099-10-01T12:00:00+00:00',
   cancel_reason: 'Rain forecast',
   description: null,

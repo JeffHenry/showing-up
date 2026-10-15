@@ -59,10 +59,10 @@ README is updated with every merged PR.
   - [x] Database: scheduling rules, locking once started, cancelling, optimistic concurrency
   - [x] Shift list (upcoming/past, grouped by day, Load more) and detail, create form
   - [x] Edit, duplicate, cancel, delete, conflict and overlap warnings
-- [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
+- [x] **Signups:** claim/cancel with optimistic UI and full-shift handling
   - [x] Database: race-free claiming, overlap and capacity rules, drop-out lock, departures
   - [x] Volunteers sign up and drop out (optimistic UI), fill counts in lists
-  - [ ] Coordinators see who's coming and remove someone
+  - [x] Coordinators see who's coming and remove someone
 - [ ] **My Shifts** view
 - [ ] **Role-based navigation**
   - [x] Organization navigation (Overview, and Members for coordinators and owners)
@@ -305,7 +305,8 @@ the API directly gets exactly the same answers as the UI. See
   `confirmed_count`, so everyone sees how full it is, while volunteers can read only their own
   signups and coordinators see who's coming. Signups lock once the shift starts; people who
   leave an organization lose their upcoming signups there; a shift people signed up for can't be
-  deleted (cancel it instead) or shrunk below the people already coming.
+  deleted (cancel it instead) or shrunk below the people already coming. See
+  [ADR 0012](docs/adr/0012-signups.md).
 
 **Planned**
 

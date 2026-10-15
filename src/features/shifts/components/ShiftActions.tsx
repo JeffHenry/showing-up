@@ -22,6 +22,8 @@ export function ShiftActions({ shift, status }: ShiftActionsProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [announcement, setAnnouncement] = useState('');
   const started = status === 'in-progress' || status === 'ended';
+  // The database refuses to delete a shift people signed up for; cancelling tells them it's off.
+  const hasSignups = shift.confirmed_count > 0;
 
   return (
     <section aria-labelledby="shift-actions-heading" className="space-y-3 border-t pt-6">
@@ -36,6 +38,12 @@ export function ShiftActions({ shift, status }: ShiftActionsProps) {
       {started && (
         <p className="text-sm text-muted-foreground">
           This shift has started, so it can’t be changed. You can still duplicate it.
+        </p>
+      )}
+      {!started && hasSignups && (
+        <p className="text-sm text-muted-foreground">
+          People are signed up, so this shift can’t be deleted.
+          {status === 'scheduled' && ' Cancel it instead, so they know it’s off.'}
         </p>
       )}
       <div className="flex flex-wrap gap-2">
@@ -62,7 +70,7 @@ export function ShiftActions({ shift, status }: ShiftActionsProps) {
             }}
           />
         )}
-        {!started && <DeleteShift shift={shift} />}
+        {!started && !hasSignups && <DeleteShift shift={shift} />}
       </div>
       <p role="status" className="sr-only">
         {announcement}

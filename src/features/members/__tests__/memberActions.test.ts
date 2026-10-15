@@ -43,7 +43,8 @@ describe('confirmCopy', () => {
   it('names the person and the effect', () => {
     expect(confirmCopy(volunteerMember, { kind: 'remove' }, false, 'Riverside Food Bank')).toEqual({
       title: 'Remove Jordan Lee?',
-      description: "They'll lose access to Riverside Food Bank until someone invites them again.",
+      description:
+        "They'll lose access to Riverside Food Bank until someone invites them again, and their upcoming shift signups there are cancelled.",
       confirmLabel: 'Remove',
       destructive: true,
     });

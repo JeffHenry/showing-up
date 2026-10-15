@@ -172,7 +172,11 @@ describe('organization pages', () => {
 
     await user.click(await screen.findByRole('link', { name: 'Invite people' }));
 
-    expect(await screen.findByRole('heading', { level: 2, name: 'Invite people' })).toHaveFocus();
+    // The page moves focus in an effect, which can run just after the heading first appears.
+    const heading = await screen.findByRole('heading', { level: 2, name: 'Invite people' });
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
   });
 
   it('keeps volunteers out of the Members page', async () => {

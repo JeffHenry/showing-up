@@ -17,3 +17,4 @@ such rather than edited.
 | [0009](0009-invites.md)                               | Invites                                            | Accepted |
 | [0010](0010-members-and-display-names.md)             | Members and display names                          | Accepted |
 | [0011](0011-shifts.md)                                | Shifts                                             | Accepted |
+| [0012](0012-signups.md)                               | Signups                                            | Accepted |

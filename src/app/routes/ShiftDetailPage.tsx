@@ -12,6 +12,7 @@ import { ShiftNotFound } from '@/features/shifts/components/ShiftNotFound';
 import { ShiftStatusBadge } from '@/features/shifts/components/ShiftStatusBadge';
 import { shiftStatus } from '@/features/shifts/display';
 import { SHIFT_NOTICES, shiftNotice } from '@/features/shifts/navigationState';
+import { ShiftRoster } from '@/features/signups/components/ShiftRoster';
 import { SignupPanel } from '@/features/signups/components/SignupPanel';
 import { APP_NAME } from '@/lib/constants';
 
@@ -73,8 +74,13 @@ export function ShiftDetailPage() {
       <ShiftStatusBadge status={status} />
       <ShiftDetails shift={shift} timeZone={org.timezone} now={now} />
       <SignupPanel orgId={org.id} shift={shift} />
-      {/* UX only: row-level security and the shifts trigger decide what may change. */}
-      {role !== 'volunteer' && <ShiftActions shift={shift} status={status} />}
+      {/* UX only: row-level security, the signup functions, and the shifts trigger decide. */}
+      {role !== 'volunteer' && (
+        <>
+          <ShiftRoster orgId={org.id} timeZone={org.timezone} shift={shift} />
+          <ShiftActions shift={shift} status={status} />
+        </>
+      )}
     </div>
   );
 }
