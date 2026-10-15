@@ -24,6 +24,10 @@ export type AppErrorCode =
   | 'SHIFT_CANCELLED'
   | 'SHIFT_CHANGED'
   | 'SHIFT_NOT_FOUND'
+  | 'SHIFT_FULL'
+  | 'SCHEDULE_CONFLICT'
+  | 'CAPACITY_BELOW_SIGNUPS'
+  | 'SHIFT_HAS_SIGNUPS'
   | 'NETWORK'
   | 'UNKNOWN';
 
@@ -58,6 +62,13 @@ const MESSAGES: Record<AppErrorCode, string> = {
   SHIFT_CHANGED:
     'Someone else changed this shift while you were editing. Load the latest version, then make your changes again.',
   SHIFT_NOT_FOUND: 'This shift no longer exists. It may have been deleted.',
+  SHIFT_FULL: 'This shift is full. Someone took the last spot just before you.',
+  SCHEDULE_CONFLICT:
+    "You're already signed up for another shift at that time. Drop out of that one first.",
+  CAPACITY_BELOW_SIGNUPS:
+    'More people are already signed up than that. Keep at least as many spots as people signed up, or remove someone first.',
+  SHIFT_HAS_SIGNUPS:
+    "People are signed up for this shift, so it can't be deleted. Cancel it instead, so they know it's off.",
   NETWORK: "We couldn't reach the server. Check your connection and try again.",
   UNKNOWN: 'Something went wrong. Please try again.',
 };
@@ -89,6 +100,10 @@ const DATABASE_ERROR_CODES: Partial<Record<string, AppErrorCode>> = {
   SHIFT_TOO_FAR: 'SHIFT_TOO_FAR',
   SHIFT_STARTED: 'SHIFT_STARTED',
   SHIFT_CANCELLED: 'SHIFT_CANCELLED',
+  SHIFT_FULL: 'SHIFT_FULL',
+  SCHEDULE_CONFLICT: 'SCHEDULE_CONFLICT',
+  CAPACITY_BELOW_SIGNUPS: 'CAPACITY_BELOW_SIGNUPS',
+  SHIFT_HAS_SIGNUPS: 'SHIFT_HAS_SIGNUPS',
 };
 
 /** The friendly error for a known code, e.g. to explain an expired invite the API reported. */

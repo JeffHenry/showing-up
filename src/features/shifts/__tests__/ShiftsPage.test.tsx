@@ -16,7 +16,7 @@ import { createGate } from '@/test/gate';
 import { orgHandlers } from '@/test/msw/orgs';
 import { REST_URL, restError } from '@/test/msw/rest';
 import { server } from '@/test/msw/server';
-import { shiftHandlers } from '@/test/msw/shifts';
+import { shiftHandlers, shiftRow } from '@/test/msw/shifts';
 import { renderRoutes } from '@/test/render';
 
 const volunteerOrg = { ...testOrg, role: 'volunteer' as const };
@@ -60,13 +60,16 @@ describe('ShiftsPage', () => {
     );
     expect(within(saturday).getByText('9:00 AM – 12:00 PM')).toBeInTheDocument();
     expect(within(saturday).getByText('Main warehouse')).toBeInTheDocument();
-    expect(within(saturday).getByText('6 volunteers needed')).toBeInTheDocument();
-    expect(within(saturday).getByText('1 volunteer needed')).toBeInTheDocument();
+    expect(shiftItem('Morning sorting')).toHaveTextContent('2 of 6 filled');
+    expect(shiftItem('Afternoon packing')).toHaveTextContent('Full');
 
     const sunday = screen.getByRole('region', { name: 'Sunday, October 25, 2099' });
     expect(within(sunday).getByRole('link', { name: 'Food drive' })).toBeInTheDocument();
     expect(shiftItem('Food drive')).toHaveTextContent('Cancelled');
     expect(within(sunday).getByText('10:00 PM – 6:00 AM (next day)')).toBeInTheDocument();
+    // Shifts the signed-in person claimed are marked, with text as well as an icon.
+    expect(shiftItem('Overnight shelter')).toHaveTextContent('You’re signed up');
+    expect(shiftItem('Morning sorting')).not.toHaveTextContent('You’re signed up');
 
     await waitFor(() => {
       expect(document.title).toBe('Shifts · Riverside Food Bank · ShowingUp');
@@ -148,6 +151,25 @@ describe('ShiftsPage', () => {
     expect(requests.at(-1)?.get('order')).toBe('start_time.desc,id.desc');
   });
 
+  it('re-checks spot counts each time the page opens, without waiting for the cache to age', async () => {
+    server.use(shiftHandlers.list([summaryOf(testShift)]));
+    const { user } = renderShifts();
+
+    const nav = await screen.findByRole('navigation', { name: 'Organization' });
+    await screen.findByRole('link', { name: 'Morning sorting' });
+    expect(shiftItem('Morning sorting')).toHaveTextContent('2 of 6 filled');
+
+    // Someone else signs up while this person looks at another page.
+    server.use(shiftHandlers.list([{ ...summaryOf(testShift), confirmed_count: 3 }]));
+    await user.click(within(nav).getByRole('link', { name: 'Overview' }));
+    await screen.findByRole('heading', { level: 1, name: 'Riverside Food Bank' });
+    await user.click(within(nav).getByRole('link', { name: 'Shifts' }));
+
+    await waitFor(() => {
+      expect(shiftItem('Morning sorting')).toHaveTextContent('3 of 6 filled');
+    });
+  });
+
   it('opens on past shifts from a shared link', async () => {
     server.use(shiftHandlers.list([summaryOf(testShift)]));
     renderShifts({ search: '?when=past' });
@@ -178,7 +200,7 @@ describe('ShiftsPage', () => {
     server.use(
       http.get(`${REST_URL}/shifts`, async ({ request }) => {
         if (!new URL(request.url).searchParams.has('or')) {
-          return HttpResponse.json(manyShifts(21));
+          return HttpResponse.json(manyShifts(21).map(shiftRow));
         }
         await gate.opened;
         return restError(500, 'XX000', 'internal error');

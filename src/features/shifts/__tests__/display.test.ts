@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupByDay, shiftStatus, volunteersNeeded } from '@/features/shifts/display';
+import { groupByDay, shiftStatus } from '@/features/shifts/display';
 import {
   afternoonShift,
   cancelledShift,
@@ -24,13 +24,6 @@ describe('shiftStatus', () => {
   it('reports cancelled shifts as cancelled, whatever the time', () => {
     const cancelled = { ...shift, cancelled_at: '2026-10-01T00:00:00Z' };
     expect(shiftStatus(cancelled, new Date('2026-10-24T15:00:00Z'))).toBe('cancelled');
-  });
-});
-
-describe('volunteersNeeded', () => {
-  it('counts volunteers in words', () => {
-    expect(volunteersNeeded(1)).toBe('1 volunteer needed');
-    expect(volunteersNeeded(8)).toBe('8 volunteers needed');
   });
 });
 

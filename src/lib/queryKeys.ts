@@ -51,4 +51,9 @@ export const queryKeys = {
     overlaps: (orgId: string, window: OverlapWindow) =>
       ['shifts', orgId, 'overlaps', window] as const,
   },
+  signups: {
+    all: ['signups'] as const,
+    /** Who's signed up for a shift (coordinators and owners only). */
+    forShift: (shiftId: string) => ['signups', shiftId] as const,
+  },
 };

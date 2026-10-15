@@ -61,7 +61,7 @@ README is updated with every merged PR.
   - [x] Edit, duplicate, cancel, delete, conflict and overlap warnings
 - [ ] **Signups:** claim/cancel with optimistic UI and full-shift handling
   - [x] Database: race-free claiming, overlap and capacity rules, drop-out lock, departures
-  - [ ] Volunteers sign up and drop out (optimistic UI)
+  - [x] Volunteers sign up and drop out (optimistic UI), fill counts in lists
   - [ ] Coordinators see who's coming and remove someone
 - [ ] **My Shifts** view
 - [ ] **Role-based navigation**
@@ -140,6 +140,14 @@ flowchart LR
   offsets), fetching one extra row to know whether more exist. A **Load more** button, rather
   than infinite scroll, keeps the footer reachable by keyboard and moves focus to the first new
   shift.
+- **Optimistic signups:** Sign up and Drop out update the shift's page immediately (spots,
+  "You're signed up"), then reconcile with the server: if it refuses (the last spot just went,
+  or the person is already booked at that time), the change rolls back and the reason is shown
+  next to the button. One button switches between Sign up and Drop out so keyboard focus stays
+  put; if it disappears (the shift filled), focus moves to the section heading. Shift lists and
+  pages are never cached as fresh: opening one, or returning to the window, shows the cached
+  copy at once and re-checks the spot counts in the background. Live updates while a page sits
+  open are planned with Supabase Realtime (P2).
 - **Conflicts surfaced while editing:** the shift form warns, without blocking, when the time
   overlaps another shift at the same location (or with the same title, without one), which
   catches accidental duplicates while allowing parallel crews. Edits that lose a race show

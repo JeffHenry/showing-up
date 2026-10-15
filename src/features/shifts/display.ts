@@ -17,11 +17,6 @@ export function shiftLinkId(shiftId: string): string {
   return `shift-link-${shiftId}`;
 }
 
-/** "1 volunteer needed", "8 volunteers needed". */
-export function volunteersNeeded(capacity: number): string {
-  return `${String(capacity)} ${capacity === 1 ? 'volunteer' : 'volunteers'} needed`;
-}
-
 export interface ShiftDay {
   /** The calendar day, "2026-10-24", in the organization's time zone. */
   key: string;

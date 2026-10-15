@@ -122,8 +122,7 @@ export const routes: RouteObject[] = [
                   {
                     path: 'shifts/:shiftId',
                     lazy: async () => ({
-                      Component: (await import('@/features/shifts/components/ShiftDetailPage'))
-                        .ShiftDetailPage,
+                      Component: (await import('@/app/routes/ShiftDetailPage')).ShiftDetailPage,
                     }),
                   },
                   {

@@ -33,7 +33,7 @@ describe('LandingPage', () => {
       'href',
       REPO_URL,
     );
-    expect(screen.getByText(/claiming shifts is next/i)).toBeInTheDocument();
+    expect(screen.getByText(/signing up for shifts work today/i)).toBeInTheDocument();
   });
 
   it('has no detectable accessibility violations', async () => {

@@ -11,6 +11,7 @@ import {
 } from '@/features/shifts/api/shiftsApi';
 import type { ShiftInput } from '@/features/shifts/types';
 import { toAppError } from '@/lib/errors';
+import { testUser } from '@/test/fixtures/auth';
 import { testOrg } from '@/test/fixtures/orgs';
 import { manyShifts, summaryOf, testShift } from '@/test/fixtures/shifts';
 import type { ShiftUpdateRequest } from '@/test/msw/shifts';
@@ -42,7 +43,12 @@ describe('fetchShiftPage', () => {
     const requests: URLSearchParams[] = [];
     server.use(shiftHandlers.list(manyShifts(21), [], (params) => requests.push(params)));
 
-    const page = await fetchShiftPage({ orgId: testOrg.id, when: 'upcoming', cursor: null });
+    const page = await fetchShiftPage({
+      orgId: testOrg.id,
+      userId: testUser.id,
+      when: 'upcoming',
+      cursor: null,
+    });
 
     expect(page.shifts).toHaveLength(20);
     expect(page.next).toEqual({
@@ -58,13 +64,23 @@ describe('fetchShiftPage', () => {
     expect(params?.get('limit')).toBe('21');
     expect(params?.has('or')).toBe(false);
     expect(params?.get('select')).not.toContain('description');
+    // Only the signed-in person's own confirmed signup is embedded, as a yes/no.
+    expect(params?.get('my_signup.user_id')).toBe(`eq.${testUser.id}`);
+    expect(params?.get('my_signup.status')).toBe('eq.confirmed');
+    expect(page.shifts[0]).toMatchObject({ confirmed_count: 0, signed_up: false });
+    expect(page.shifts[0]).not.toHaveProperty('my_signup');
   });
 
   it('continues from a cursor, keeping its "now", and stops at the last page', async () => {
     const requests: URLSearchParams[] = [];
     server.use(shiftHandlers.list([], manyShifts(3, 21), (params) => requests.push(params)));
 
-    const page = await fetchShiftPage({ orgId: testOrg.id, when: 'past', cursor });
+    const page = await fetchShiftPage({
+      orgId: testOrg.id,
+      userId: testUser.id,
+      when: 'past',
+      cursor,
+    });
 
     expect(page.shifts).toHaveLength(3);
     expect(page.next).toBeNull();
@@ -78,10 +94,10 @@ describe('fetchShiftPage', () => {
 describe('fetchShift', () => {
   it('returns the shift, or null when it is missing or hidden', async () => {
     server.use(shiftHandlers.detail(testShift));
-    expect(await fetchShift(testShift.id)).toEqual(testShift);
+    expect(await fetchShift(testShift.id, testUser.id)).toEqual(testShift);
 
     server.use(shiftHandlers.detail(null));
-    expect(await fetchShift(testShift.id)).toBeNull();
+    expect(await fetchShift(testShift.id, testUser.id)).toBeNull();
   });
 });
 
@@ -139,7 +155,7 @@ describe('updateShift', () => {
     let sent: ShiftUpdateRequest | undefined;
     server.use(shiftHandlers.updateOk((request) => (sent = request)));
 
-    await updateShift({ shiftId: testShift.id, version: 3, input });
+    await updateShift({ shiftId: testShift.id, userId: testUser.id, version: 3, input });
 
     expect(sent).toEqual({
       id: testShift.id,
@@ -157,27 +173,27 @@ describe('updateShift', () => {
 
   it('explains why nothing was saved', async () => {
     server.use(shiftHandlers.updateNoRows(), shiftHandlers.detail({ ...testShift, version: 2 }));
-    expect(await codeOf(updateShift({ shiftId: testShift.id, version: 1, input }))).toBe(
-      'SHIFT_CHANGED',
-    );
+    expect(
+      await codeOf(updateShift({ shiftId: testShift.id, userId: testUser.id, version: 1, input })),
+    ).toBe('SHIFT_CHANGED');
 
     server.use(shiftHandlers.detail(null));
-    expect(await codeOf(updateShift({ shiftId: testShift.id, version: 1, input }))).toBe(
-      'SHIFT_NOT_FOUND',
-    );
+    expect(
+      await codeOf(updateShift({ shiftId: testShift.id, userId: testUser.id, version: 1, input })),
+    ).toBe('SHIFT_NOT_FOUND');
 
     // Unchanged and still there, yet not saved: row-level security refused.
     server.use(shiftHandlers.detail(testShift));
-    expect(await codeOf(updateShift({ shiftId: testShift.id, version: 1, input }))).toBe(
-      'NOT_AUTHORIZED',
-    );
+    expect(
+      await codeOf(updateShift({ shiftId: testShift.id, userId: testUser.id, version: 1, input })),
+    ).toBe('NOT_AUTHORIZED');
   });
 
   it('passes on the database’s own refusals', async () => {
     server.use(shiftHandlers.updateFails('SHIFT_STARTED'));
-    expect(await codeOf(updateShift({ shiftId: testShift.id, version: 1, input }))).toBe(
-      'SHIFT_STARTED',
-    );
+    expect(
+      await codeOf(updateShift({ shiftId: testShift.id, userId: testUser.id, version: 1, input })),
+    ).toBe('SHIFT_STARTED');
   });
 });
 
