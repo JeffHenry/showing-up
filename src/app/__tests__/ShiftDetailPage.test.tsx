@@ -32,7 +32,9 @@ describe('ShiftDetailPage', () => {
     ).toBeInTheDocument();
     expect(detail('When')).toHaveTextContent('Saturday, October 24, 2099, 9:00 AM – 12:00 PM CDT');
     expect(detail('Where')).toHaveTextContent('Main warehouse');
-    expect(detail('Volunteers')).toHaveTextContent('6 volunteers needed');
+    expect(screen.getByRole('region', { name: 'Volunteer spots' })).toHaveTextContent(
+      '2 of 6 spots filled · 4 left',
+    );
     const details = screen.getByRole('region', { name: 'Details' });
     expect(details).toHaveTextContent('Wear closed-toe shoes. Ask for Sam at the front desk.', {
       normalizeWhitespace: true,
@@ -58,7 +60,9 @@ describe('ShiftDetailPage', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Afternoon packing' });
     expect(detail('Where')).toHaveTextContent('No location given');
-    expect(detail('Volunteers')).toHaveTextContent('1 volunteer needed');
+    expect(screen.getByRole('region', { name: 'Volunteer spots' })).toHaveTextContent(
+      '1 of 1 spot filled · Full',
+    );
     expect(screen.queryByRole('region', { name: 'Details' })).not.toBeInTheDocument();
   });
 

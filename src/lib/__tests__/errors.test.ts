@@ -62,6 +62,18 @@ describe('toAppError', () => {
     ['a shift over a year ahead', { code: 'P0001', message: 'SHIFT_TOO_FAR' }, 'SHIFT_TOO_FAR'],
     ['a shift that has started', { code: 'P0001', message: 'SHIFT_STARTED' }, 'SHIFT_STARTED'],
     ['a cancelled shift', { code: 'P0001', message: 'SHIFT_CANCELLED' }, 'SHIFT_CANCELLED'],
+    ['a full shift', { code: 'P0001', message: 'SHIFT_FULL' }, 'SHIFT_FULL'],
+    ['a double booking', { code: 'P0001', message: 'SCHEDULE_CONFLICT' }, 'SCHEDULE_CONFLICT'],
+    [
+      'capacity below the signups',
+      { code: 'P0001', message: 'CAPACITY_BELOW_SIGNUPS' },
+      'CAPACITY_BELOW_SIGNUPS',
+    ],
+    [
+      'deleting a shift people signed up for',
+      { code: 'P0001', message: 'SHIFT_HAS_SIGNUPS' },
+      'SHIFT_HAS_SIGNUPS',
+    ],
     ['a conflict the app detected', new AppException('SHIFT_CHANGED'), 'SHIFT_CHANGED'],
     ['an unrecognized database error', { code: 'P0001', message: 'SOMETHING_NEW' }, 'UNKNOWN'],
     ['a rejected value', { code: '23514', message: 'violates check constraint' }, 'INVALID_INPUT'],

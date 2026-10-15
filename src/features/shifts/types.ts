@@ -5,8 +5,21 @@ type ShiftRow = Database['public']['Tables']['shifts']['Row'];
 /** What a shift list shows for each shift. */
 export type ShiftSummary = Pick<
   ShiftRow,
-  'id' | 'title' | 'location' | 'start_time' | 'end_time' | 'capacity' | 'cancelled_at'
->;
+  | 'id'
+  | 'title'
+  | 'location'
+  | 'start_time'
+  | 'end_time'
+  | 'capacity'
+  | 'confirmed_count'
+  | 'cancelled_at'
+> & {
+  /** Whether the signed-in person has a spot on it. */
+  signed_up: boolean;
+};
+
+/** Another shift at the same time, as the form's overlap warning lists it. */
+export type OverlappingShift = Pick<ShiftRow, 'id' | 'title' | 'start_time' | 'end_time'>;
 
 /** Everything the shift's own page shows, plus what editing needs (`version`). */
 export type ShiftDetail = ShiftSummary &

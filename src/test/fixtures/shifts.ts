@@ -4,7 +4,7 @@ import { testOrg } from '@/test/fixtures/orgs';
 // Fixed dates far ahead, so headings and times don't depend on when the tests run. The test
 // organization is in America/Chicago (CDT, UTC−5, in late October 2099).
 
-/** Saturday, Oct 24, 9:00 AM – 12:00 PM, with a location and multi-line details. */
+/** Saturday, Oct 24, 9:00 AM – 12:00 PM, 2 of 6 spots filled, with a location and details. */
 export const testShift: ShiftDetail = {
   id: '00000000-0000-0000-0000-0000000005a1',
   org_id: testOrg.id,
@@ -13,13 +13,15 @@ export const testShift: ShiftDetail = {
   start_time: '2099-10-24T14:00:00+00:00',
   end_time: '2099-10-24T17:00:00+00:00',
   capacity: 6,
+  confirmed_count: 2,
+  signed_up: false,
   cancelled_at: null,
   cancel_reason: null,
   description: 'Wear closed-toe shoes.\nAsk for Sam at the front desk.',
   version: 1,
 };
 
-/** Saturday, Oct 24, 2:00 – 5:00 PM, one volunteer, no location. */
+/** Saturday, Oct 24, 2:00 – 5:00 PM, one spot (taken), no location. */
 export const afternoonShift: ShiftDetail = {
   ...testShift,
   id: '00000000-0000-0000-0000-0000000005a2',
@@ -28,6 +30,7 @@ export const afternoonShift: ShiftDetail = {
   start_time: '2099-10-24T19:00:00+00:00',
   end_time: '2099-10-24T22:00:00+00:00',
   capacity: 1,
+  confirmed_count: 1,
   description: null,
 };
 
@@ -44,7 +47,7 @@ export const cancelledShift: ShiftDetail = {
   version: 2,
 };
 
-/** Sunday, Oct 25, 10:00 PM – Monday 6:00 AM. */
+/** Sunday, Oct 25, 10:00 PM – Monday 6:00 AM; the signed-in person is signed up. */
 export const overnightShift: ShiftDetail = {
   ...testShift,
   id: '00000000-0000-0000-0000-0000000005a4',
@@ -53,6 +56,8 @@ export const overnightShift: ShiftDetail = {
   start_time: '2099-10-26T03:00:00+00:00',
   end_time: '2099-10-26T11:00:00+00:00',
   capacity: 2,
+  confirmed_count: 1,
+  signed_up: true,
   description: null,
 };
 
@@ -65,6 +70,8 @@ export function summaryOf(shift: ShiftDetail): ShiftSummary {
     start_time: shift.start_time,
     end_time: shift.end_time,
     capacity: shift.capacity,
+    confirmed_count: shift.confirmed_count,
+    signed_up: shift.signed_up,
     cancelled_at: shift.cancelled_at,
   };
 }
@@ -84,6 +91,8 @@ export function manyShifts(count: number, firstNumber = 1): ShiftSummary[] {
       start_time: start.toISOString(),
       end_time: new Date(start.getTime() + 60 * 60 * 1000).toISOString(),
       capacity: 3,
+      confirmed_count: 0,
+      signed_up: false,
       cancelled_at: null,
     };
   });

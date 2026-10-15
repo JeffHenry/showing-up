@@ -1,9 +1,10 @@
-import { MapPin, Users } from 'lucide-react';
+import { CircleCheck, MapPin, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { ShiftStatusBadge } from '@/features/shifts/components/ShiftStatusBadge';
-import { shiftLinkId, shiftStatus, volunteersNeeded } from '@/features/shifts/display';
+import { shiftLinkId, shiftStatus } from '@/features/shifts/display';
 import type { ShiftSummary } from '@/features/shifts/types';
 import { formatTimeRange } from '@/lib/dates';
+import { spotsShort } from '@/lib/spots';
 
 interface ShiftListItemProps {
   shift: ShiftSummary;
@@ -31,7 +32,15 @@ export function ShiftListItem({ shift, orgId, timeZone, now }: ShiftListItemProp
             {shift.title}
           </Link>
         </h3>
-        <ShiftStatusBadge status={status} />
+        <div className="flex flex-wrap justify-end gap-2">
+          {shift.signed_up && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 px-2 py-0.5 text-xs font-medium text-primary">
+              <CircleCheck aria-hidden="true" className="size-3" />
+              You’re signed up
+            </span>
+          )}
+          <ShiftStatusBadge status={status} />
+        </div>
       </div>
       <p className="text-sm">{formatTimeRange(shift.start_time, shift.end_time, timeZone)}</p>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -43,7 +52,7 @@ export function ShiftListItem({ shift, orgId, timeZone, now }: ShiftListItemProp
         )}
         <span className="inline-flex items-center gap-1">
           <Users aria-hidden="true" className="size-4" />
-          {volunteersNeeded(shift.capacity)}
+          {spotsShort(shift.confirmed_count, shift.capacity)}
         </span>
       </div>
     </li>

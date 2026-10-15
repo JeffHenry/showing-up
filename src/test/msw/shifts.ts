@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import type { ShiftDetail, ShiftSummary } from '@/features/shifts/types';
+import type { OverlappingShift, ShiftDetail, ShiftSummary } from '@/features/shifts/types';
 import { REST_URL, restError } from '@/test/msw/rest';
 
 /**
@@ -13,6 +13,14 @@ function kindOf(request: Request): ShiftRequest {
   const params = new URL(request.url).searchParams;
   if (params.has('cancelled_at')) return 'overlaps';
   return params.has('org_id') ? 'list' : 'detail';
+}
+
+/**
+ * A shift as PostgREST returns it: the signed-in person's own signup is embedded
+ * (`my_signup`), which the app turns back into `signed_up`.
+ */
+export function shiftRow<T extends ShiftSummary>({ signed_up, ...shift }: T) {
+  return { ...shift, my_signup: signed_up ? [{ status: 'confirmed' }] : [] };
 }
 
 /** What an update targeted, read from its PostgREST filters. */
@@ -36,14 +44,14 @@ export const shiftHandlers = {
       if (kindOf(request) !== 'list') return undefined;
       const params = new URL(request.url).searchParams;
       onRequest?.(params);
-      return HttpResponse.json(params.has('or') ? nextPage : firstPage);
+      return HttpResponse.json((params.has('or') ? nextPage : firstPage).map(shiftRow));
     }),
   listFails: () =>
     http.get(`${REST_URL}/shifts`, ({ request }) =>
       kindOf(request) === 'list' ? restError(500, 'XX000', 'internal error') : undefined,
     ),
   /** The form's overlap check; `onRequest` receives each request's search params. */
-  overlaps: (shifts: ShiftSummary[], onRequest?: (params: URLSearchParams) => void) =>
+  overlaps: (shifts: OverlappingShift[], onRequest?: (params: URLSearchParams) => void) =>
     http.get(`${REST_URL}/shifts`, ({ request }) => {
       if (kindOf(request) !== 'overlaps') return undefined;
       onRequest?.(new URL(request.url).searchParams);
@@ -52,7 +60,7 @@ export const shiftHandlers = {
   /** A shift's page; `null` when it doesn't exist or the user can't see it. */
   detail: (shift: ShiftDetail | null) =>
     http.get(`${REST_URL}/shifts`, ({ request }) =>
-      kindOf(request) === 'detail' ? HttpResponse.json(shift ? [shift] : []) : undefined,
+      kindOf(request) === 'detail' ? HttpResponse.json(shift ? [shiftRow(shift)] : []) : undefined,
     ),
   detailFails: () =>
     http.get(`${REST_URL}/shifts`, ({ request }) =>

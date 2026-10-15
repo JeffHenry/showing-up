@@ -5,6 +5,7 @@ import {
   deleteShift,
   updateShift,
 } from '@/features/shifts/api/shiftsApi';
+import { useAuth } from '@/context/useAuth';
 import type { ShiftInput } from '@/features/shifts/types';
 import { queryKeys } from '@/lib/queryKeys';
 
@@ -35,9 +36,10 @@ export function useCreateShift(orgId: string) {
 
 export function useUpdateShift(orgId: string, shiftId: string) {
   const refresh = useRefreshShift(orgId, shiftId);
+  const userId = useAuth().user?.id ?? '';
   return useMutation({
     mutationFn: ({ version, input }: { version: number; input: ShiftInput }) =>
-      updateShift({ shiftId, version, input }),
+      updateShift({ shiftId, userId, version, input }),
     onSuccess: refresh,
   });
 }
