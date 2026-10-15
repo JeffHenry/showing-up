@@ -5,6 +5,7 @@ import { memberHandlers } from '@/test/msw/members';
 import { orgHandlers } from '@/test/msw/orgs';
 import { profileHandlers, testUserName } from '@/test/msw/profiles';
 import { shiftHandlers } from '@/test/msw/shifts';
+import { signupHandlers } from '@/test/msw/signups';
 
 /**
  * Default handlers shared by every test. Keep these to happy-path responses and
@@ -22,4 +23,6 @@ export const handlers: RequestHandler[] = [
   inviteHandlers.accepted([]),
   // Shift forms check for overlapping shifts as times are entered; usually there are none.
   shiftHandlers.overlaps([]),
+  // Coordinators' shift pages list who's coming; usually no one yet.
+  signupHandlers.list([]),
 ];

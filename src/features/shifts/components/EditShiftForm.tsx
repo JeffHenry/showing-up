@@ -27,6 +27,7 @@ export function EditShiftForm({ shift, onLoadLatest, reloaded }: EditShiftFormPr
   const [baseVersion] = useState(shift.version);
   const shiftPath = `/orgs/${org.id}/shifts/${shift.id}`;
   const error = update.error ? toAppError(update.error) : null;
+  const signedUp = shift.confirmed_count;
 
   return (
     <ShiftForm
@@ -41,6 +42,11 @@ export function EditShiftForm({ shift, onLoadLatest, reloaded }: EditShiftFormPr
       isDone={update.isSuccess}
       requestError={error}
       focusFirstField={reloaded}
+      capacityHint={
+        signedUp > 0
+          ? `${String(signedUp)} ${signedUp === 1 ? 'person is' : 'people are'} signed up, so keep at least ${String(signedUp)}.`
+          : undefined
+      }
       errorAction={
         error?.code === 'SHIFT_CHANGED' ? (
           <Button type="button" variant="outline" onClick={onLoadLatest}>

@@ -35,6 +35,7 @@ function useOptimisticSignup(
       Promise.all([
         queryClient.invalidateQueries({ queryKey: detailKey }),
         queryClient.invalidateQueries({ queryKey: queryKeys.shifts.forOrg(orgId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.signups.forShift(shiftId) }),
       ]),
   });
 }
@@ -55,4 +56,21 @@ export function useDropOut(orgId: string, shiftId: string) {
     () => cancelSignup({ shiftId }),
     (shift) => ({ signed_up: false, confirmed_count: Math.max(shift.confirmed_count - 1, 0) }),
   );
+}
+
+/**
+ * A coordinator removing someone from a shift. Not optimistic: it's confirmed in a dialog,
+ * which shows progress and any refusal.
+ */
+export function useRemoveSignup(orgId: string, shiftId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => cancelSignup({ shiftId, userId }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.signups.forShift(shiftId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.shifts.detail(shiftId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.shifts.forOrg(orgId) }),
+      ]),
+  });
 }

@@ -13,5 +13,17 @@ export interface SignupShift {
   signed_up: boolean;
 }
 
+/** The parts of a shift the "Who's coming" list needs. */
+export type RosterShift = Pick<SignupShift, 'id' | 'title' | 'start_time' | 'cancelled_at'>;
+
+/** One person coming to a shift, as the coordinators' "Who's coming" list shows them. */
+export interface ShiftSignup {
+  userId: string;
+  /** Null for someone who hasn't chosen a display name. */
+  fullName: string | null;
+  /** When they signed up (most recently, if they dropped out and came back). */
+  signedUpAt: string;
+}
+
 /** The fields a signup changes in a cached shift (for optimistic updates). */
 export type SignupFields = Pick<SignupShift, 'confirmed_count' | 'signed_up'>;

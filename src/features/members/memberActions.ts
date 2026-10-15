@@ -52,7 +52,7 @@ export function confirmCopy(
   if (action.kind === 'remove') {
     return {
       title: `Remove ${name}?`,
-      description: `They'll lose access to ${orgName} until someone invites them again.`,
+      description: `They'll lose access to ${orgName} until someone invites them again, and their upcoming shift signups there are cancelled.`,
       confirmLabel: 'Remove',
       destructive: true,
     };
